@@ -1,0 +1,112 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  forest: CollectionEntry<'analysis'>['data']['forest'];
+  boxKm: number;
+}
+
+const { forest, boxKm } = Astro.props;
+const years = Object.keys(forest.box.lossByYear);
+const box = years.map((y) => forest.box.lossByYear[y] ?? 0);
+const inside = years.map((y) => forest.footprint?.lossByYear[y] ?? 0);
+const max = Math.max(1, ...box);
+const W = 640;
+const H = 170;
+const pad = { top: 10, right: 6, bottom: 22, left: 34 };
+const bw = (W - pad.left - pad.right) / years.length;
+const y = (v: number) => pad.top + (H - pad.top - pad.bottom) * (1 - v / max);
+const tickStep = max > 150 ? 50 : max > 60 ? 20 : max > 20 ? 10 : 5;
+const ticks = Array.from({ length: Math.floor(max / tickStep) + 1 }, (_, i) => i * tickStep);
+---
+
+<figure class="chart">
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="loss-title">
+    <title id="loss-title">
+      Tree cover loss per year {years[0]}–{years.at(-1)}, hectares, in the {boxKm} × {boxKm} km area{' '}
+      {forest.footprint ? 'and inside the mapped mine footprint' : ''}
+    </title>
+    {
+      ticks.map((t) => (
+        <g>
+          <line x1={pad.left} x2={W - pad.right} y1={y(t)} y2={y(t)} class="grid" />
+          <text x={pad.left - 6} y={y(t) + 3.5} class="tick" text-anchor="end">
+            {t}
+          </text>
+        </g>
+      ))
+    }
+    {
+      years.map((yr, i) => {
+        const x = pad.left + i * bw + 1;
+        return (
+          <g>
+            <rect x={x} width={bw - 2} y={y(box[i])} height={y(0) - y(box[i])} class="box">
+              <title>
+                {yr}: {box[i]} ha in area{forest.footprint ? `, ${inside[i]} ha inside footprint` : ''}
+              </title>
+            </rect>
+            {forest.footprint && <rect x={x} width={bw - 2} y={y(inside[i])} height={y(0) - y(inside[i])} class="inside" />}
+            {(i % 4 === 0 || i === years.length - 1) && (
+              <text x={x + bw / 2 - 1} y={H - 6} class="tick" text-anchor="middle">
+                {yr}
+              </text>
+            )}
+          </g>
+        );
+      })
+    }
+  </svg>
+  <figcaption class="legend">
+    <span><i class="sw box"></i> whole {boxKm} × {boxKm} km area</span>
+    {forest.footprint && <span><i class="sw inside"></i> inside mapped mine footprint</span>}
+    <span class="muted">hectares per year</span>
+  </figcaption>
+</figure>
+
+<style>
+  .chart {
+    margin: 0;
+    max-width: 720px;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .grid {
+    stroke: var(--line);
+    stroke-width: 1;
+  }
+  .tick {
+    font-family: var(--mono);
+    font-size: 10px;
+    fill: var(--muted);
+  }
+  .box {
+    fill: #cdbfa8;
+  }
+  .inside {
+    fill: var(--accent);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.2rem;
+    font-size: 0.82rem;
+    margin-top: 0.4rem;
+  }
+  .sw {
+    display: inline-block;
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 2px;
+    vertical-align: -0.05rem;
+  }
+  .sw.box {
+    background: #cdbfa8;
+  }
+  .sw.inside {
+    background: var(--accent);
+  }
+</style>

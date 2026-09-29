@@ -1,0 +1,39 @@
+---
+interface Props {
+  urls: string[];
+  /** Source URL -> 1-based number in the page's source list. */
+  index: Map<string, number>;
+}
+
+const { urls, index } = Astro.props;
+// Numbered, in order, and separated so that sources 4 and 1 never read as "41".
+const numbers = [...new Set(urls.map((url) => index.get(url)!))].sort((a, b) => a - b);
+---
+
+<sup class="cite"
+  >[{
+    numbers.map((n, i) => (
+      <>
+        {i > 0 && ', '}
+        <a href={`#src-${n}`} aria-label={`Source ${n}`}>{n}</a>
+      </>
+    ))
+  }]</sup
+>
+
+<style>
+  .cite {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    padding-left: 2px;
+    white-space: nowrap;
+  }
+  .cite a {
+    text-decoration: none;
+    color: inherit;
+  }
+  .cite a:hover {
+    text-decoration: underline;
+  }
+</style>

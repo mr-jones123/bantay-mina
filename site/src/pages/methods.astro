@@ -1,0 +1,159 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Methods"
+  description="How Bantay Mina makes its before-and-after images and forest-loss figures, and what they cannot show."
+>
+  <article class="wrap prose">
+    <header class="head">
+      <p class="label">Methods</p>
+      <h1>How the images and numbers are made</h1>
+    </header>
+
+    <p>
+      Everything here comes from free, public data and one open-source script (<code>pipeline/</code> in the
+      project repository). Anyone can rerun it and should get the same pictures and the same hectares.
+    </p>
+
+    <h2>Before-and-after images</h2>
+    <ol>
+      <li>
+        <strong>Same box, same grid.</strong> Each site has one square analysis box, 5 to 15 km wide
+        depending on how far the mine spreads, on a 10 m UTM grid (20 m for the largest boxes). Every image
+        of that site is drawn on exactly that grid, so the slider compares the same
+        ground pixel for pixel.
+      </li>
+      <li>
+        <strong>Same season.</strong> Both sides use only January–May scenes, the dry season in Northern Luzon.
+        Comparing a wet-season "before" with a dry-season "after" would make normal browning look like damage.
+      </li>
+      <li>
+        <strong>Many scenes, not one.</strong> Clouds and their shadows are removed with each satellite's own
+        quality mask (Landsat <code>QA_PIXEL</code>, Sentinel-2 scene classification). Those masks miss some
+        thin and bright cloud, and missed cloud is almost always brighter than the ground. So for each pixel the
+        pipeline ranks its remaining clear views by blue brightness and keeps the one a quarter of the way up
+        from the darkest, all bands from that same view. The caption under each slider lists how many
+        acquisition dates were used and what share of the box had at least one clear view; grey pixels had none.
+      </li>
+      <li>
+        <strong>True colour, no boosting.</strong> Red, green and blue surface reflectance, with one fixed
+        brightness stretch applied identically to both sides. Nothing is recoloured to look worse.
+      </li>
+      <li>
+        <strong>Labels burned in.</strong> Each image carries its date range, satellite, resolution and
+        attribution, so a screenshot shared on its own still says what it is. Unlabelled GeoTIFF copies are
+        linked under every slider for checking in QGIS.
+      </li>
+    </ol>
+    <p>
+      Landsat (30 m) goes back to the 1980s and is used when the "before" date predates Sentinel-2. It is
+      resampled to the 10 m grid for display; that makes it smoother, not sharper. Sentinel-2 (10 m) starts in
+      2015–2017 and shows more detail.
+    </p>
+
+    <h2>Vegetation → bare ground</h2>
+    <p>
+      For each pair of images, the pipeline also computes the vegetation index NDVI (from the red and
+      near-infrared bands) of the same chosen views. A pixel counts as "went from green vegetation to
+      bare ground or water" if its NDVI was at least 0.5 before (dense green cover) and below 0.3 after (bare
+      soil, rock, water, pavement or very sparse cover). The sea, rivers and lakes that were already water in
+      the 2000s (Hansen data mask) are left out, because open water gives noisy NDVI; ponds dug since then,
+      such as tailings ponds, are counted. Pixels without a clear view on both sides are also left out. The
+      magenta overlay on each slider shows exactly which pixels were counted.
+    </p>
+    <p>
+      This catches clearing of farms, brush and regrowth that tree cover datasets miss. It also catches
+      anything else that turns green land bare, such as new roads, landslides or buildings, which is why the
+      figure inside the mapped mine footprint is given separately. It undercounts where the land was dry grass
+      or brush before, because that is not dense green in the dry season. The thresholds are fixed for every
+      site and are not tuned to make a site look worse.
+    </p>
+
+    <h2>Water change</h2>
+    <p>
+      The same chosen views also give the water index NDWI (from the green and near-infrared bands). A pixel
+      "turned from land into water" if its NDWI was below −0.1 before and above 0.1 after, and the reverse for
+      "turned from water into land". Open sea is so dark that its NDWI is unreliable, so inside water mapped in
+      the 2000s (Hansen data mask) any pixel darker than 0.03 in near-infrared counts as water; on land, dark
+      terrain shadow does not. "Dry" land must reflect at least 0.05, and only ground that was land in the 2000s
+      can count as newly water. The gap between the thresholds keeps
+      wet soil, shadow and muddy
+      shallows from flickering into change. This picks up new ponds, such as tailings impoundments and flooded
+      pits, and shorelines or river mouths that moved. The blue and lime overlay shows which pixels were
+      counted. Tides, river floods and seasonal ponds also move water, so one comparison on its own does not
+      prove that mining caused the change.
+    </p>
+
+    <h2>Tree cover loss</h2>
+    <p>
+      Hectares of tree cover loss come from the Hansen / University of Maryland Global Forest Change dataset
+      (version GFC-2025-v1.13, 30 m, yearly 2001–2025), the same data behind Global Forest Watch. A pixel
+      counts as tree cover if it had at least 30% canopy in 2000, the Global Forest Watch default. Pixel areas
+      are computed from latitude.
+    </p>
+    <p>
+      <strong>Loss has many causes</strong>: mining, but also farming, roads, landslides and typhoons. The
+      figure for the whole box is therefore labelled "all causes". The figure inside the mapped mine footprint
+      is the one most directly tied to mining.
+    </p>
+
+    <h2>Mine footprints</h2>
+    <p>
+      Outlines of pits, waste dumps, tailings ponds and processing plants come from Tang &amp; Werner (2023),
+      who traced 74,548 mine features worldwide by hand on high-resolution satellite imagery. They cover what
+      was visible when that imagery was captured, so newer expansion may be missing, and they are not permit
+      boundaries.
+    </p>
+
+    <h2>What this site does not claim</h2>
+    <ul>
+      <li>
+        Satellite images show land cover. They do not show water contamination, health effects, or whether an
+        operation is legal. Those claims appear only in the text, each with a cited source.
+      </li>
+      <li>
+        Mining permit boundaries (MGB tenement maps) are not yet on the map. Until they are, the site does not
+        say whether clearing happened inside or outside a permit.
+      </li>
+      <li>
+        No homes, villages or individuals are mapped. Indigenous communities are named only as they are named
+        in public sources.
+      </li>
+    </ul>
+
+    <h2>Data and licences</h2>
+    <ul>
+      <li>Landsat Collection 2 Level-2: USGS/NASA, public domain.</li>
+      <li>Sentinel-2 Level-2A: contains modified Copernicus Sentinel data, free and open licence.</li>
+      <li>Both accessed through Microsoft Planetary Computer.</li>
+      <li>
+        Hansen et al. 2013, <em>Science</em> 342: 850–853; data CC BY 4.0.
+      </li>
+      <li>
+        Tang, L. &amp; Werner, T. T. 2023, <em>Communications Earth &amp; Environment</em> 4: 134; data CC BY 4.0.
+      </li>
+      <li>Basemap: © OpenStreetMap contributors (ODbL), tiles by OpenFreeMap.</li>
+    </ul>
+
+    <h2 id="corrections">Corrections</h2>
+    <p>
+      If a date, figure or source is wrong, open an issue on the project repository with a link to the
+      evidence. Corrections are made openly and noted on the affected page with the date they were made.
+    </p>
+  </article>
+</Base>
+
+<style>
+  .head {
+    padding: 2.2rem 0 1rem;
+  }
+  .head .label {
+    margin-bottom: 0.6rem;
+  }
+  code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+  }
+</style>

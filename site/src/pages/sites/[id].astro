@@ -1,0 +1,272 @@
+---
+import { render } from 'astro:content';
+import BeforeAfter from '../../components/BeforeAfter.astro';
+import Cite from '../../components/Cite.astro';
+import PermitNotice from '../../components/PermitNotice.astro';
+import LossChart from '../../components/LossChart.astro';
+import SiteMap from '../../components/SiteMap.astro';
+import Base from '../../layouts/Base.astro';
+import { asset } from '../../lib/paths';
+import { ha, loadSites, toMapSite, type LoadedSite } from '../../lib/sites';
+
+export async function getStaticPaths() {
+  const all = await loadSites();
+  return all.map((loaded) => ({ params: { id: loaded.site.id }, props: loaded }));
+}
+
+const { site, analysis } = Astro.props as LoadedSite;
+const d = site.data;
+const { Content } = await render(site);
+const { forest, footprint } = analysis;
+const [lossFrom, lossTo] = forest.years;
+const sourceIndex = new Map(d.sources.map((s, i) => [s.url, i + 1]));
+const reviewed = d.lastReviewed.toISOString().slice(0, 10);
+const lead = analysis.comparisons[0];
+const heroImage = lead.after.image;
+const span = (years: number[]) => (years.length > 1 ? `${years[0]}–${years.at(-1)}` : `${years[0]}`);
+---
+
+<Base title={d.name} description={d.summary} image={heroImage}>
+  <article class="wrap">
+    <header class="head">
+      <p class="label">{d.municipality}, {d.province} · {d.region}</p>
+      <h1>{d.name}</h1>
+      <p class="lede">{d.summary}</p>
+      <PermitNotice />
+    </header>
+
+    <div class="layout">
+      <div class="main">
+        {
+          analysis.comparisons.map((cmp) => (
+            <section class="cmp">
+              <h2>{cmp.title}</h2>
+              <BeforeAfter analysis={analysis} comparison={cmp} />
+            </section>
+          ))
+        }
+      </div>
+
+      <aside class="facts">
+        <dl>
+          <div><dt class="label">Operator</dt><dd>{d.operator}</dd></div>
+          <div><dt class="label">Commodities</dt><dd>{d.commodities.join(', ')}</dd></div>
+          <div><dt class="label">Stage</dt><dd class="cap">{d.stage}</dd></div>
+          <div>
+            <dt class="label">Permit</dt>
+            <dd>
+              {d.permit.type}<br />
+              Held by {d.permit.holder}<br />
+              {d.permit.status}
+              <Cite urls={[d.permit.source]} index={sourceIndex} />
+            </dd>
+          </div>
+        </dl>
+
+        <div class="figures">
+          {
+            footprint && (
+              <div>
+                <p class="big num">{ha(footprint.areaHa)}</p>
+                <p class="muted">mapped mine footprint (pits, dumps, ponds, plant) — {footprint.source}</p>
+              </div>
+            )
+          }
+          <div>
+            <p class="big num">{ha(lead.change.vegetationToBareHa)}</p>
+            <p class="muted">
+              went from green vegetation to bare ground or water, {span(lead.before.years)} → {span(lead.after.years)}, in
+              the {analysis.boxKm} × {analysis.boxKm} km area shown
+            </p>
+          </div>
+          {
+            forest.footprint && (
+              <div>
+                <p class="big num">{ha(forest.footprint.lossHa)}</p>
+                <p class="muted">
+                  of tree cover lost {lossFrom}–{lossTo} inside the footprint, per {forest.dataset} (counts only
+                  trees; see below)
+                </p>
+              </div>
+            )
+          }
+        </div>
+        <p class="label">Last reviewed {reviewed}</p>
+      </aside>
+    </div>
+
+    <hr class="rule" />
+
+    <section class="two">
+      <div>
+        <h2>Tree cover loss by year</h2>
+        <p class="muted small">
+          {forest.dataset}. Loss means a stand-replacing disturbance of a 30 m pixel that had at least{' '}
+          {forest.canopyThresholdPct}% canopy in 2000. It does not say why the trees were lost, it ignores clearing of
+          farms, brush and young regrowth, and land that regrew after loss still counts as lost. So it will not match
+          the vegetation → bare figure above.
+        </p>
+        <LossChart forest={forest} boxKm={analysis.boxKm} />
+      </div>
+      <div>
+        <h2>Where</h2>
+        <p class="muted small">Dashed box: the area shown in the images. Filled: mapped mine footprint.</p>
+        <SiteMap sites={[toMapSite({ site, analysis })]} focus={site.id} height="320px" />
+      </div>
+    </section>
+
+    <hr class="rule" />
+
+    <section class="prose">
+      <Content />
+    </section>
+
+    <section class="prose">
+      <h2>Timeline</h2>
+      <ol class="timeline">
+        {
+          d.timeline.map((t) => (
+            <li>
+              <span class="mono when">{t.date}</span>
+              <span>
+                {t.text}
+                <Cite urls={t.sources} index={sourceIndex} />
+              </span>
+            </li>
+          ))
+        }
+      </ol>
+
+      <h2>Sources</h2>
+      <ol class="sources">
+        {
+          d.sources.map((s, i) => (
+            <li id={`src-${i + 1}`}>
+              <a href={s.url} rel="noopener">{s.title}</a>. {s.publisher}
+              {s.date && <span class="muted">, {s.date}</span>}.
+            </li>
+          ))
+        }
+      </ol>
+      <p class="muted small">
+        Imagery and figures generated {analysis.generatedAt.slice(0, 10)} by the Bantay Mina pipeline. How they are
+        made, and their limits: <a href={asset('/methods/')}>Methods</a>.
+      </p>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .head {
+    padding: 2.2rem 0 1.4rem;
+    max-width: 46rem;
+  }
+  .head .label {
+    margin-bottom: 0.6rem;
+  }
+  .lede {
+    font-size: 1.1rem;
+    margin: 0.8rem 0 1rem;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 720px) minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .cmp + .cmp {
+    margin-top: 2.2rem;
+  }
+  .cmp h2 {
+    margin-bottom: 0.8rem;
+  }
+  .facts {
+    position: sticky;
+    top: 1rem;
+    font-size: 0.9rem;
+  }
+  .facts dl {
+    margin: 0;
+    border-top: 1px solid var(--line);
+  }
+  .facts dl > div {
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .facts dd {
+    margin: 0.15rem 0 0;
+  }
+  .cap {
+    text-transform: capitalize;
+  }
+  .figures {
+    display: grid;
+    gap: 1rem;
+    margin: 1.4rem 0;
+  }
+  .figures p {
+    margin: 0;
+  }
+  .big {
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--accent);
+    line-height: 1.1;
+  }
+  .two {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 2.5rem;
+  }
+  .two h2 {
+    margin-bottom: 0.4rem;
+  }
+  .small {
+    font-size: 0.85rem;
+  }
+  .timeline,
+  .sources {
+    padding-left: 0;
+    list-style: none;
+  }
+  .timeline li {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 0.8rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .when {
+    font-size: 0.8rem;
+    color: var(--muted);
+    padding-top: 0.2rem;
+  }
+  .sources {
+    counter-reset: src;
+    font-size: 0.88rem;
+  }
+  .sources li {
+    counter-increment: src;
+    padding-left: 2rem;
+    position: relative;
+  }
+  .sources li::before {
+    content: counter(src);
+    position: absolute;
+    left: 0;
+    font-family: var(--mono);
+    color: var(--muted);
+  }
+  .sources li:target {
+    background: #f1e2c9;
+  }
+  @media (max-width: 900px) {
+    .layout,
+    .two {
+      grid-template-columns: 1fr;
+    }
+    .facts {
+      position: static;
+    }
+  }
+</style>

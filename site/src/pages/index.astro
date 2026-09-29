@@ -1,0 +1,134 @@
+---
+import PermitNotice from '../components/PermitNotice.astro';
+import SiteMap from '../components/SiteMap.astro';
+import Base from '../layouts/Base.astro';
+import { asset } from '../lib/paths';
+import { ha, loadSites, toMapSite } from '../lib/sites';
+
+const all = await loadSites();
+const mapSites = all.map(toMapSite);
+---
+
+<Base
+  title="Bantay Mina"
+  description="Before-and-after satellite images of mining sites in Northern Luzon, Philippines, with the forest loss behind them."
+>
+  <div class="wrap">
+    <header class="head">
+      <p class="label">Northern Luzon · satellite record</p>
+      <h1>What mining has done to the land, seen from orbit.</h1>
+      <p class="lede">
+        Free Landsat and Sentinel-2 imagery of the same place, same season, years apart. Every image is a
+        cloud-free composite made the same way on both sides, and every number links back to public data.
+      </p>
+    </header>
+
+    <div class="heads-up"><PermitNotice /></div>
+
+    <SiteMap sites={mapSites} />
+
+    <section class="list">
+      <h2 class="label">Sites</h2>
+      <ul>
+        {
+          all.map(({ site, analysis }) => {
+            const first = analysis.comparisons[0];
+            return (
+              <li>
+                <a class="card" href={asset(`/sites/${site.id}/`)}>
+                  <span class="thumbs">
+                    <img src={asset(first.before.image)} alt="" width="120" height="120" loading="lazy" />
+                    <img src={asset(first.after.image)} alt="" width="120" height="120" loading="lazy" />
+                  </span>
+                  <span class="text">
+                    <span class="label">
+                      {site.data.municipality}, {site.data.province}
+                    </span>
+                    <strong>{site.data.name}</strong>
+                    <span class="muted">{site.data.summary}</span>
+                    <span class="num stats">
+                      {analysis.footprint && <>{ha(analysis.footprint.areaHa)} mapped footprint · </>}
+                      {ha(first.change.vegetationToBareHa)} vegetation → bare, {first.before.years[0]}→{first.after.years.at(-1)}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .head {
+    padding: 2.4rem 0 1.6rem;
+    max-width: 44rem;
+  }
+  .head .label {
+    margin-bottom: 0.7rem;
+  }
+  .heads-up {
+    margin-bottom: 1rem;
+  }
+  .lede {
+    font-size: 1.08rem;
+    margin-top: 0.9rem;
+    color: var(--muted);
+  }
+  .list {
+    margin-top: 2.2rem;
+  }
+  .list h2 {
+    margin-bottom: 0.6rem;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-top: 1px solid var(--line);
+  }
+  .card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.2rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+  }
+  .card:hover strong {
+    color: var(--accent);
+  }
+  .thumbs {
+    display: flex;
+    gap: 2px;
+  }
+  .thumbs img {
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+  .text {
+    display: grid;
+    gap: 0.2rem;
+    align-content: start;
+    max-width: 46rem;
+  }
+  strong {
+    font-size: 1.15rem;
+    font-weight: 600;
+    transition: color 150ms;
+  }
+  .stats {
+    font-size: 0.78rem;
+    color: var(--accent);
+    margin-top: 0.2rem;
+  }
+  @media (max-width: 560px) {
+    .card {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,11 @@
+# pipeline
+pipeline/.venv/
+pipeline/data/raw/
+__pycache__/
+
+# site
+site/node_modules/
+site/dist/
+site/.astro/
+
+.DS_Store

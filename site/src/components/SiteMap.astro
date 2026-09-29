@@ -1,0 +1,138 @@
+---
+import { asset } from '../lib/paths';
+import type { MapSite } from '../lib/sites';
+
+interface Props {
+  sites: MapSite[];
+  /** Zoom to this site's analysis box instead of the whole region. */
+  focus?: string;
+  height?: string;
+}
+
+const { sites, focus, height = '460px' } = Astro.props;
+const config = {
+  sites: sites.map((s) => ({ ...s, footprint: s.footprint && asset(s.footprint) })),
+  focus: focus ?? null,
+};
+---
+
+<div class="map" data-map={JSON.stringify(config)} style={`height: ${height}`}>
+  <noscript>The map needs JavaScript. The list of sites below works without it.</noscript>
+</div>
+
+<script>
+  import {
+    Map as MapLibreMap,
+    NavigationControl,
+    Popup,
+    ScaleControl,
+    setWorkerUrl,
+    type MapLayerMouseEvent,
+  } from 'maplibre-gl';
+  import 'maplibre-gl/dist/maplibre-gl.css';
+  // MapLibre resolves its worker at runtime, which Vite cannot see; bundle it explicitly.
+  import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+  import type { MapSite } from '../lib/sites';
+
+  setWorkerUrl(workerUrl);
+
+  // OpenFreeMap: OpenStreetMap vector tiles, no key, no usage caps.
+  const STYLE = 'https://tiles.openfreemap.org/styles/positron';
+  // Northern Luzon: Ilocos to Cagayan, Cordillera to Aurora.
+  const NORTH_LUZON: [number, number, number, number] = [119.7, 15.3, 122.6, 18.7];
+
+  const box = ([w, s, e, n]: MapSite['bounds']) => ({
+    type: 'Feature' as const,
+    properties: {},
+    geometry: { type: 'Polygon' as const, coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] },
+  });
+
+  for (const el of document.querySelectorAll<HTMLElement>('[data-map]')) {
+    const { sites, focus } = JSON.parse(el.dataset.map!) as { sites: MapSite[]; focus: string | null };
+    const focused = sites.find((s) => s.id === focus);
+    const map = new MapLibreMap({
+      container: el,
+      style: STYLE,
+      bounds: focused ? focused.bounds : NORTH_LUZON,
+      fitBoundsOptions: { padding: focused ? 40 : 20 },
+      cooperativeGestures: true,
+      attributionControl: { compact: true },
+    });
+    map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+    map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-left');
+
+    map.on('load', async () => {
+      map.addSource('boxes', { type: 'geojson', data: { type: 'FeatureCollection', features: sites.map((s) => box(s.bounds)) } });
+      map.addLayer({
+        id: 'boxes',
+        type: 'line',
+        source: 'boxes',
+        paint: { 'line-color': '#1d1a16', 'line-width': 1, 'line-dasharray': [2, 2], 'line-opacity': 0.6 },
+      });
+
+      for (const s of sites) {
+        if (!s.footprint) continue;
+        const data = await fetch(s.footprint).then((r) => r.json());
+        map.addSource(`fp-${s.id}`, { type: 'geojson', data });
+        map.addLayer({ id: `fp-${s.id}`, type: 'fill', source: `fp-${s.id}`, paint: { 'fill-color': '#9a3b1f', 'fill-opacity': 0.55 } });
+      }
+
+      map.addSource('sites', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: sites.map((s) => ({
+            type: 'Feature',
+            properties: { id: s.id },
+            geometry: { type: 'Point', coordinates: s.center },
+          })),
+        },
+      });
+      map.addLayer({
+        id: 'sites',
+        type: 'circle',
+        source: 'sites',
+        maxzoom: focused ? 11 : 24,
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 5, 12, 9],
+          'circle-color': '#9a3b1f',
+          'circle-stroke-color': '#fffdf8',
+          'circle-stroke-width': 2,
+        },
+      });
+
+      map.on('click', 'sites', (e: MapLayerMouseEvent) => {
+        const site = sites.find((s) => s.id === e.features?.[0]?.properties?.id);
+        if (!site) return;
+        const html = document.createElement('div');
+        const link = document.createElement('a');
+        link.href = site.href;
+        link.textContent = site.name;
+        const meta = document.createElement('div');
+        meta.textContent = `${site.place} · ${site.stage}`;
+        html.append(link, meta);
+        new Popup({ closeButton: false }).setLngLat(site.center).setDOMContent(html).addTo(map);
+      });
+      map.on('mouseenter', 'sites', () => (map.getCanvas().style.cursor = 'pointer'));
+      map.on('mouseleave', 'sites', () => (map.getCanvas().style.cursor = ''));
+    });
+  }
+</script>
+
+<style>
+  .map {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #e9e4da;
+  }
+  .map :global(.maplibregl-popup-content) {
+    font-family: var(--serif);
+    font-size: 0.9rem;
+    padding: 0.6rem 0.8rem;
+  }
+  .map :global(.maplibregl-popup-content a) {
+    font-weight: 600;
+  }
+</style>

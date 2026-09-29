@@ -1,0 +1,194 @@
+# Analysis areas processed by `uv run python -m bantay build <slug>`.
+#
+# Rules every comparison follows (see site/src/pages/methods.astro):
+# - both images cover the same box on the same grid;
+# - both are dry-season (January–May) composites of many scenes, so seasonal
+#   green-up is not mistaken for damage;
+# - both use the same true-colour stretch; no per-image colour boosting.
+
+defaults:
+  box_km: 6            # square analysis box, centred on `center`
+  pixel_m: 10          # output grid; Landsat (30 m) is resampled for display
+  months: [1, 5]       # inclusive month range for every composite
+  max_scene_cloud: 60  # skip scenes whose whole-scene cloud cover is above this (%)
+  stretch: [0.0, 0.22] # surface reflectance mapped to black..white
+  gamma: 1.4
+
+sites:
+  didipio:
+    name: Didipio mine
+    center: [121.4503, 16.3247] # lon, lat — 16°19′29″N 121°27′01″E
+    comparisons:
+      - id: landsat-2005-2026
+        title: Before construction (2005–07) vs. 2026
+        sensor: landsat
+        # Landsat 5 only: Landsat 7 images after 2003 have scan-line gaps.
+        before: { platforms: [landsat-5], years: [2005, 2006, 2007] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Sharper view, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80 # few Sentinel-2 dry-season scenes before 2019; per-pixel masking does the rest
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  # Centres below are the middle of the Tang & Werner 2023 footprint cluster for each mine.
+
+  padcal:
+    name: Philex Padcal mine
+    center: [120.6515, 16.2562] # Tuba / Itogon, Benguet
+    box_km: 9 # tailings ponds spread ~7.6 × 5.2 km
+    comparisons:
+      - id: landsat-1988-2026
+        title: Operating mine, 1988–90 vs. 2026
+        sensor: landsat
+        before: { platforms: [landsat-5], years: [1988, 1989, 1990] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  lepanto:
+    name: Lepanto mine
+    center: [120.7786, 16.876] # Mankayan, Benguet
+    box_km: 7
+    comparisons:
+      - id: landsat-1988-2026
+        title: Operating mine, 1988–90 vs. 2026
+        sensor: landsat
+        before: { platforms: [landsat-5], years: [1988, 1989, 1990] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  runruno:
+    name: Runruno gold mine
+    center: [121.3246, 16.4046] # Quezon, Nueva Vizcaya
+    box_km: 5
+    comparisons:
+      - id: landsat-2006-2026
+        title: Before mine construction (2006–09) vs. 2026
+        sensor: landsat
+        before: { platforms: [landsat-5], years: [2006, 2007, 2008, 2009] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Early operations, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  dinapigue:
+    name: Dinapigue nickel mine
+    center: [122.3085, 16.611] # Dinapigue, Isabela (Sierra Madre, Pacific coast)
+    box_km: 7
+    comparisons:
+      - id: landsat-2003-2026
+        title: Before mine development (2003–06) vs. 2026
+        sensor: landsat
+        # MPSA signed July 2007; causeway, haul road and pier reported in place by Sept 2008.
+        before: { platforms: [landsat-5], years: [2003, 2004, 2005, 2006] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Sharper view, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  zambales-nickel:
+    name: Santa Cruz–Candelaria nickel mines
+    center: [120.0185, 15.7374] # Santa Cruz / Candelaria, Zambales
+    box_km: 15 # ~9 × 14 km of mapped mine features
+    pixel_m: 20 # keeps the 15 km box at 750 px
+    comparisons:
+      - id: landsat-2002-2026
+        title: Before the nickel expansion (2002–05) vs. 2026
+        sensor: landsat
+        # Residents date mining's arrival to 2006; Benguet Corp. began its Santa Cruz nickel project in 2007.
+        before: { platforms: [landsat-5], years: [2002, 2003, 2004, 2005] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Suspension years (2016–18) vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  # Centre from PCIJ's EIS-based location of dredging Segment 7 (beside Toran) and the Dodan site
+  # raided by the NBI in 2012; about ±1–2 km. The box covers the corridor, not a permit polygon.
+  cagayan-black-sand:
+    name: Cagayan River mouth, Aparri
+    center: [121.66, 18.34]
+    box_km: 10
+    comparisons:
+      - id: sentinel2-2020-2024
+        title: Before the river dredging (2020) vs. 2024
+        sensor: sentinel-2
+        # DENR agreement Dec 2020; dredging reported from Q1 2021; stopped in 2023.
+        before: { years: [2020] }
+        after: { years: [2024] }
+      - id: landsat-2009-2014
+        title: Around the 2012 Dodan raid, 2009–11 vs. 2013–14
+        sensor: landsat
+        before: { platforms: [landsat-5], years: [2009, 2010, 2011] }
+        after: { platforms: [landsat-8], years: [2013, 2014] }
+
+  # Centre from Metals Exploration's map of Woggle's Keon target (UTM 51N ≈ 305,800 E, 1,798,600 N),
+  # ~100–200 m precision. Exploration only: little or no change is an expected result.
+  kasibu-dupax-exploration:
+    name: Woggle Keon exploration target, Dupax del Norte
+    center: [121.1828, 16.2604]
+    box_km: 4
+    comparisons:
+      - id: sentinel2-2024-2026
+        title: Before exploration drilling (2024) vs. 2026
+        sensor: sentinel-2
+        # Mapping June 2025, access track and drill pads by Aug 2025, drilling Q4 2025, MGB suspension Feb 2026.
+        before: { years: [2024] }
+        after: { years: [2026] }
+
+  barlo:
+    name: Barlo mine (abandoned)
+    center: [119.9548, 15.9722] # Barangay Barlo, Mabini, Pangasinan; Tang & Werner cluster centre
+    box_km: 7
+    comparisons:
+      - id: landsat-1988-2026
+        title: Four years after closure (1988–90) vs. 2026
+        sensor: landsat
+        # Acoje mined here 1974–1984; nothing on the site is "before mining".
+        before: { platforms: [landsat-5], years: [1988, 1989, 1990] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  itogon:
+    name: Itogon gold mining district
+    # Covers Antamok, Acupan–Balatoc, the Sangilo claim envelope and the 2018 First Gate (Ucab) landslide.
+    center: [120.660, 16.367]
+    box_km: 11
+    comparisons:
+      - id: landsat-1988-2026
+        title: Late large-mine era (1988–90) vs. 2026
+        sensor: landsat
+        # Mining here since 1906; Antamok open pit ran ~1992–1998.
+        before: { platforms: [landsat-5], years: [1988, 1989, 1990] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Before Typhoon Ompong (2016–18) vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        # Jan–May scenes only, so every "before" view predates the September 2018 landslide.
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }

@@ -1,0 +1,26 @@
+---
+import { asset } from '../lib/paths';
+---
+
+<aside class="notice" role="note">
+  <strong>Heads up: permit boundaries are not on this site yet.</strong>{' '}
+  The mapped mine footprints show where land was dug, not where a company is allowed to dig. Until the Mines and
+  Geosciences Bureau's tenement maps are added, nothing here says whether any clearing happened inside or outside
+  a permit. <a href={asset('/methods/')}>Methods</a>
+</aside>
+
+<style>
+  .notice {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    background: var(--paper);
+    border-radius: var(--radius);
+    padding: 0.7rem 0.9rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    max-width: 46rem;
+  }
+  .notice strong {
+    font-weight: 600;
+  }
+</style>

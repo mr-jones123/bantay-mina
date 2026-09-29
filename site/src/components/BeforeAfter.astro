@@ -1,0 +1,287 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { asset } from '../lib/paths';
+
+type Analysis = CollectionEntry<'analysis'>['data'];
+
+interface Props {
+  analysis: Analysis;
+  comparison: Analysis['comparisons'][number];
+}
+
+const { analysis, comparison } = Astro.props;
+const [w, h] = analysis.sizePx;
+const { before, after } = comparison;
+const [lossFrom, lossTo] = analysis.forest.years;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const when = (s: typeof before) =>
+  `${MONTHS[s.months[0] - 1]}–${MONTHS[s.months[1] - 1]} ${s.years.length > 1 ? `${s.years[0]}–${s.years.at(-1)}` : s.years[0]}`;
+const pct = (x: number) => `${Math.round(x * 100)}%`;
+const describe = (s: typeof before) =>
+  `${s.platformLabel}, ${when(s)}, composite of ${s.sceneDates.length} acquisition dates. ` +
+  `${pct(s.clearFraction)} of the area has at least one cloud-free view.`;
+const notes = [
+  `True colour, identical stretch on both sides, native resolution ${comparison.nativeResolutionM} m, ${analysis.boxKm} × ${analysis.boxKm} km.`,
+  `${comparison.attribution}.`,
+  analysis.footprint && `Footprint: ${analysis.footprint.source}.`,
+  `Tree cover loss: ${analysis.forest.dataset} (all causes, ≥${analysis.forest.canopyThresholdPct}% canopy in 2000).`,
+  `Vegetation → bare: NDVI ≥ ${comparison.change.ndviVegetated} before and < ${comparison.change.ndviBare} after.`,
+  `Water change: NDWI below ${comparison.water.ndwiDry} on one side and above ${comparison.water.ndwiWater} on the other.`,
+]
+  .filter(Boolean)
+  .join(' ');
+const haText = (v: number) => `${Math.round(v).toLocaleString('en-US')} ha`;
+const { landToWaterHa, waterToLandHa } = comparison.water;
+// Only mention water change when it is at least a hectare; below that it is pixel noise.
+const waterNote = [
+  landToWaterHa >= 1 && `${haText(landToWaterHa)} turned from land into water`,
+  waterToLandHa >= 1 && `${haText(waterToLandHa)} turned from water into land`,
+]
+  .filter(Boolean)
+  .join(', and ')
+  .replace(/^./, (c) => c.toUpperCase());
+const waterSentence = waterNote && `${waterNote}.`;
+---
+
+<figure class="ba" data-ba>
+  <div class="stage" style={`aspect-ratio: ${w} / ${h}`}>
+    <img class="after" src={asset(after.image)} width={w} height={h} alt={`After: ${comparison.title}, ${after.platformLabel} ${when(after)}`} />
+    <img class="before" src={asset(before.image)} width={w} height={h} alt={`Before: ${comparison.title}, ${before.platformLabel} ${when(before)}`} />
+    <img class="overlay loss" src={asset(analysis.forest.overlay)} width={w} height={h} alt="" hidden />
+    <img class="overlay change" src={asset(comparison.change.overlay)} width={w} height={h} alt="" hidden />
+    <img class="overlay water" src={asset(comparison.water.overlay)} width={w} height={h} alt="" hidden />
+    {
+      analysis.footprint && (
+        <div class="overlay footprint" aria-hidden="true" hidden>
+          <svg viewBox={`0 0 ${w} ${h}`}>
+            <path d={analysis.footprint.svgPath} />
+          </svg>
+        </div>
+      )
+    }
+    <div class="handle" aria-hidden="true"></div>
+    <input
+      class="range"
+      type="range"
+      min="0"
+      max="100"
+      value="50"
+      step="0.5"
+      aria-label={`Slide to compare ${when(before)} (left) with ${when(after)} (right)`}
+    />
+  </div>
+
+  <p class="change-stat">
+    <span class="num">{Math.round(comparison.change.vegetationToBareHa).toLocaleString('en-US')} ha</span> went from green
+    vegetation to bare ground or water between these two images{
+      comparison.change.insideFootprintHa !== null &&
+        (comparison.change.insideFootprintHa < 0.5 ? (
+          <>, almost none of it inside the mapped mine footprint</>
+        ) : (
+          <>, {haText(comparison.change.insideFootprintHa)} of it inside the mapped mine footprint</>
+        ))
+    }.{waterSentence && ` ${waterSentence}`}
+  </p>
+
+  <div class="controls">
+    <label>
+      <input type="checkbox" data-toggle="change" /> Vegetation → bare
+      <span class="ramp" aria-hidden="true"><i style="background: rgb(255, 64, 214)"></i></span>
+    </label>
+    <label>
+      <input type="checkbox" data-toggle="water" /> Water change
+      <span class="ramp" aria-hidden="true"><i style="background: rgb(47, 123, 255)"></i></span><span class="muted"
+        >became water</span
+      >
+      <span class="ramp" aria-hidden="true"><i style="background: rgb(157, 255, 58)"></i></span><span class="muted"
+        >became land</span
+      >
+    </label>
+    {
+      analysis.footprint && (
+        <label>
+          <input type="checkbox" data-toggle="footprint" /> Mapped mine footprint
+        </label>
+      )
+    }
+    <label>
+      <input type="checkbox" data-toggle="loss" /> Tree cover lost {lossFrom}–{lossTo}
+      <span class="ramp" aria-hidden="true"
+        ><i style="background: rgb(255, 220, 40)"></i><i style="background: rgb(255, 110, 20)"></i><i
+          style="background: rgb(255, 0, 0)"></i></span
+      ><span class="mono muted">{lossFrom}→{lossTo}</span>
+    </label>
+  </div>
+
+  <figcaption>
+    <dl class="meta">
+      <div>
+        <dt class="label">Left · before</dt>
+        <dd>{describe(before)} <a href={asset(before.geotiff)} download>GeoTIFF</a></dd>
+      </div>
+      <div>
+        <dt class="label">Right · after</dt>
+        <dd>{describe(after)} <a href={asset(after.geotiff)} download>GeoTIFF</a></dd>
+      </div>
+    </dl>
+    <p class="muted small">{notes}</p>
+  </figcaption>
+</figure>
+
+<script>
+  for (const fig of document.querySelectorAll<HTMLElement>('[data-ba]')) {
+    const stage = fig.querySelector<HTMLElement>('.stage')!;
+    const range = fig.querySelector<HTMLInputElement>('.range')!;
+    const set = () => stage.style.setProperty('--pos', `${range.value}%`);
+    range.addEventListener('input', set);
+    set();
+    // Native range inputs only drag from the thumb on touch screens; let a press anywhere move the divider.
+    const moveTo = (e: PointerEvent) => {
+      const r = stage.getBoundingClientRect();
+      range.value = String(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
+      set();
+    };
+    range.addEventListener('pointerdown', (e) => {
+      range.setPointerCapture(e.pointerId);
+      moveTo(e);
+    });
+    range.addEventListener('pointermove', (e) => {
+      if (range.hasPointerCapture(e.pointerId)) moveTo(e);
+    });
+    for (const box of fig.querySelectorAll<HTMLInputElement>('[data-toggle]')) {
+      const layer = fig.querySelector<HTMLElement>(`.overlay.${box.dataset.toggle}`);
+      box.addEventListener('change', () => layer?.toggleAttribute('hidden', !box.checked));
+    }
+  }
+</script>
+
+<style>
+  .ba {
+    margin: 0;
+  }
+  .stage {
+    --pos: 50%;
+    position: relative;
+    width: 100%;
+    max-width: 720px;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: #222;
+    user-select: none;
+    touch-action: pan-y;
+  }
+  .stage img,
+  .stage .overlay,
+  .overlay svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .stage [hidden] {
+    display: none;
+  }
+  .before {
+    clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+  }
+  .loss,
+  .change,
+  .water {
+    image-rendering: pixelated;
+  }
+  .footprint path {
+    fill: none;
+    stroke: #6ff3ff;
+    stroke-width: 1.6;
+    vector-effect: non-scaling-stroke;
+  }
+  .handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    width: 2px;
+    margin-left: -1px;
+    background: #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+  }
+  .handle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  }
+  .range {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: ew-resize;
+  }
+  .stage:has(.range:focus-visible) .handle::after {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .change-stat {
+    max-width: 720px;
+    margin: 0.8rem 0 0;
+    font-size: 0.95rem;
+  }
+  .change-stat .num {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.4rem;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.9rem;
+  }
+  .controls label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+  }
+  .ramp {
+    display: inline-flex;
+    gap: 1px;
+  }
+  .ramp i {
+    width: 0.9rem;
+    height: 0.55rem;
+  }
+  figcaption {
+    max-width: 720px;
+    margin-top: 0.9rem;
+    font-size: 0.88rem;
+  }
+  .meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 0 0 0.6rem;
+  }
+  .meta dd {
+    margin: 0.2rem 0 0;
+  }
+  .small {
+    font-size: 0.8rem;
+  }
+  @media (max-width: 560px) {
+    .meta {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
