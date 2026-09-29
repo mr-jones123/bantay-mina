@@ -4,6 +4,7 @@ analysis: itogon
 municipality: Itogon
 province: Benguet
 region: Cordillera Administrative Region (CAR)
+islandGroup: Luzon
 operator: Benguet Corporation; Itogon-Suyoc Resources, Inc.; small-scale miners
 commodities: [gold]
 stage: operating

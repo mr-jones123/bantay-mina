@@ -4,6 +4,7 @@ analysis: runruno
 municipality: Quezon
 province: Nueva Vizcaya
 region: Cagayan Valley (Region II)
+islandGroup: Luzon
 operator: FCF Minerals Corporation
 commodities: [gold, molybdenum]
 stage: operating

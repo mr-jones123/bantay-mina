@@ -38,8 +38,6 @@ const config = {
 
   // OpenFreeMap: OpenStreetMap vector tiles, no key, no usage caps.
   const STYLE = 'https://tiles.openfreemap.org/styles/positron';
-  // Northern Luzon: Ilocos to Cagayan, Cordillera to Aurora.
-  const NORTH_LUZON: [number, number, number, number] = [119.7, 15.3, 122.6, 18.7];
 
   const box = ([w, s, e, n]: MapSite['bounds']) => ({
     type: 'Feature' as const,
@@ -50,11 +48,16 @@ const config = {
   for (const el of document.querySelectorAll<HTMLElement>('[data-map]')) {
     const { sites, focus } = JSON.parse(el.dataset.map!) as { sites: MapSite[]; focus: string | null };
     const focused = sites.find((s) => s.id === focus);
+    // Overview: the union of every site box, so new sites anywhere in the country stay in view.
+    const all: MapSite['bounds'] = [
+      Math.min(...sites.map((s) => s.bounds[0])), Math.min(...sites.map((s) => s.bounds[1])),
+      Math.max(...sites.map((s) => s.bounds[2])), Math.max(...sites.map((s) => s.bounds[3])),
+    ];
     const map = new MapLibreMap({
       container: el,
       style: STYLE,
-      bounds: focused ? focused.bounds : NORTH_LUZON,
-      fitBoundsOptions: { padding: focused ? 40 : 20 },
+      bounds: focused ? focused.bounds : all,
+      fitBoundsOptions: { padding: focused ? 40 : 30 },
       cooperativeGestures: true,
       attributionControl: { compact: true },
     });

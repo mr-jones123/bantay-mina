@@ -4,6 +4,7 @@ analysis: padcal
 municipality: Tuba and Itogon
 province: Benguet
 region: Cordillera Administrative Region (CAR)
+islandGroup: Luzon
 operator: Philex Mining Corporation
 commodities: [copper, gold, silver]
 stage: operating

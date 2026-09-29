@@ -4,6 +4,7 @@ analysis: kasibu-dupax-exploration
 municipality: Dupax del Norte and Kasibu
 province: Nueva Vizcaya
 region: Cagayan Valley (Region II)
+islandGroup: Luzon
 operator: Woggle Corporation (analysis area); North Luzon Mineral Resources Corporation (separate Kasibu area)
 commodities: [gold, copper, lead, zinc]
 stage: exploration

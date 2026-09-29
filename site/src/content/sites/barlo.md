@@ -4,6 +4,7 @@ analysis: barlo
 municipality: Mabini
 province: Pangasinan
 region: Ilocos Region (Region I)
+islandGroup: Luzon
 operator: Acoje Mining Company (1974–1984); site now abandoned
 commodities: [copper, gold, zinc, pyrite]
 stage: closed

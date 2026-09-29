@@ -20,14 +20,21 @@ import Base from '../layouts/Base.astro';
     <h2>Before-and-after images</h2>
     <ol>
       <li>
-        <strong>Same box, same grid.</strong> Each site has one square analysis box, 5 to 15 km wide
-        depending on how far the mine spreads, on a 10 m UTM grid (20 m for the largest boxes). Every image
+        <strong>Same box, same grid.</strong> Each site has one square analysis box, 4 to 16 km wide
+        depending on how far the mine spreads, on a 10 m UTM grid (20 m for Zambales). Every image
         of that site is drawn on exactly that grid, so the slider compares the same
         ground pixel for pixel.
       </li>
       <li>
-        <strong>Same season.</strong> Both sides use only January–May scenes, the dry season in Northern Luzon.
-        Comparing a wet-season "before" with a dry-season "after" would make normal browning look like damage.
+        <strong>Same months, chosen from the cloud record.</strong> Both sides of a comparison use scenes from
+        the same months of the year, so a wet-season "before" is never set against a dry-season "after" and
+        normal browning or green-up is not mistaken for damage. The months are chosen per site from the
+        Sentinel-2 cloud record for 2019–2025: for each run of months, the share of the box that had at least
+        three cloud-free views in every one of those years. In Luzon and on Semirara, January–May scores best
+        (97–100% of the box in the cloudiest year), which is the dry season there. Eastern Mindanao and the
+        Dinagat Islands have no real dry season and are cloudiest from November to March, so the Caraga sites
+        use April–September (87–100%). Toledo, in the Cebu uplands, uses March–August (99%). Each image label
+        states its months.
       </li>
       <li>
         <strong>Many scenes, not one.</strong> Clouds and their shadows are removed with each satellite's own

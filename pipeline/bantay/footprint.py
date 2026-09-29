@@ -35,7 +35,7 @@ def load(grid: SiteGrid, shapefile: Path) -> Footprint | None:
     if found.empty:
         return None
     utm = found.to_crs(grid.crs)
-    clipped = utm.geometry.intersection(grid.footprint())
+    clipped = utm.geometry.make_valid().intersection(grid.footprint())  # some source polygons self-intersect
     clipped = clipped[~clipped.is_empty & (clipped.area > 0)]
     if clipped.empty:
         return None

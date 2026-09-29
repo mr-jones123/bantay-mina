@@ -4,6 +4,7 @@ analysis: didipio
 municipality: Kasibu
 province: Nueva Vizcaya
 region: Cagayan Valley (Region II)
+islandGroup: Luzon
 operator: OceanaGold (Philippines), Inc.
 commodities: [gold, copper]
 stage: operating

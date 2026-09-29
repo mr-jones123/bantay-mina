@@ -7,18 +7,21 @@ import { ha, loadSites, toMapSite } from '../lib/sites';
 
 const all = await loadSites();
 const mapSites = all.map(toMapSite);
+const GROUPS = ['Luzon', 'Visayas', 'Mindanao'] as const;
+const groups = GROUPS.map((g) => ({ name: g, sites: all.filter(({ site }) => site.data.islandGroup === g) }))
+  .filter((g) => g.sites.length);
 ---
 
 <Base
   title="Bantay Mina"
-  description="Before-and-after satellite images of mining sites in Northern Luzon, Philippines, with the forest loss behind them."
+  description="Before-and-after satellite images of mining sites across the Philippines, with the forest loss behind them."
 >
   <div class="wrap">
     <header class="head">
-      <p class="label">Northern Luzon · satellite record</p>
+      <p class="label">Philippines · satellite record</p>
       <h1>What mining has done to the land, seen from orbit.</h1>
       <p class="lede">
-        Free Landsat and Sentinel-2 imagery of the same place, same season, years apart. Every image is a
+        Free Landsat and Sentinel-2 imagery of the same place, same months, years apart. Every image is a
         cloud-free composite made the same way on both sides, and every number links back to public data.
       </p>
     </header>
@@ -27,37 +30,41 @@ const mapSites = all.map(toMapSite);
 
     <SiteMap sites={mapSites} />
 
-    <section class="list">
-      <h2 class="label">Sites</h2>
-      <ul>
-        {
-          all.map(({ site, analysis }) => {
-            const first = analysis.comparisons[0];
-            return (
-              <li>
-                <a class="card" href={asset(`/sites/${site.id}/`)}>
-                  <span class="thumbs">
-                    <img src={asset(first.before.image)} alt="" width="120" height="120" loading="lazy" />
-                    <img src={asset(first.after.image)} alt="" width="120" height="120" loading="lazy" />
-                  </span>
-                  <span class="text">
-                    <span class="label">
-                      {site.data.municipality}, {site.data.province}
-                    </span>
-                    <strong>{site.data.name}</strong>
-                    <span class="muted">{site.data.summary}</span>
-                    <span class="num stats">
-                      {analysis.footprint && <>{ha(analysis.footprint.areaHa)} mapped footprint · </>}
-                      {ha(first.change.vegetationToBareHa)} vegetation → bare, {first.before.years[0]}→{first.after.years.at(-1)}
-                    </span>
-                  </span>
-                </a>
-              </li>
-            );
-          })
-        }
-      </ul>
-    </section>
+    {
+      groups.map((g) => (
+        <section class="list">
+          <h2 class="label">{g.name} · {g.sites.length} {g.sites.length === 1 ? 'site' : 'sites'}</h2>
+          <ul>
+            {
+              g.sites.map(({ site, analysis }) => {
+                const first = analysis.comparisons[0];
+                return (
+                  <li>
+                    <a class="card" href={asset(`/sites/${site.id}/`)}>
+                      <span class="thumbs">
+                        <img src={asset(first.before.image)} alt="" width="120" height="120" loading="lazy" />
+                        <img src={asset(first.after.image)} alt="" width="120" height="120" loading="lazy" />
+                      </span>
+                      <span class="text">
+                        <span class="label">
+                          {site.data.municipality}, {site.data.province}
+                        </span>
+                        <strong>{site.data.name}</strong>
+                        <span class="muted">{site.data.summary}</span>
+                        <span class="num stats">
+                          {analysis.footprint && <>{ha(analysis.footprint.areaHa)} mapped footprint · </>}
+                          {ha(first.change.vegetationToBareHa)} vegetation → bare, {first.before.years[0]}→{first.after.years.at(-1)}
+                        </span>
+                      </span>
+                    </a>
+                  </li>
+                );
+              })
+            }
+          </ul>
+        </section>
+      ))
+    }
   </div>
 </Base>
 

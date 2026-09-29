@@ -2,14 +2,16 @@
 #
 # Rules every comparison follows (see site/src/pages/methods.astro):
 # - both images cover the same box on the same grid;
-# - both are dry-season (January–May) composites of many scenes, so seasonal
-#   green-up is not mistaken for damage;
+# - both use the same months of the year, chosen per site from the 2019-2025 Sentinel-2
+#   cloud record (share of the box with >= 3 clear views in the cloudiest year), so
+#   seasonal green-up is not mistaken for damage. Luzon and Semirara: January-May (the
+#   dry season). Caraga (Surigao, Dinagat): April-September. Toledo, Cebu: March-August.
 # - both use the same true-colour stretch; no per-image colour boosting.
 
 defaults:
   box_km: 6            # square analysis box, centred on `center`
   pixel_m: 10          # output grid; Landsat (30 m) is resampled for display
-  months: [1, 5]       # inclusive month range for every composite
+  months: [1, 5]       # inclusive month range for every composite; sites may override
   max_scene_cloud: 60  # skip scenes whose whole-scene cloud cover is above this (%)
   stretch: [0.0, 0.22] # surface reflectance mapped to black..white
   gamma: 1.4
@@ -190,5 +192,163 @@ sites:
         sensor: sentinel-2
         max_scene_cloud: 80
         # Jan–May scenes only, so every "before" view predates the September 2018 landslide.
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  # ---- Visayas and Mindanao ----
+
+  semirara:
+    name: Semirara coal mine
+    # Semirara Island, Caluya, Antique. Unong pit 12.051 N; Molave-Narra 12.116 N.
+    center: [121.384, 12.09]
+    box_km: 12
+    comparisons:
+      - id: landsat-1988-2026
+        title: Unong pit era (1988–90) vs. 2026
+        sensor: landsat
+        # Unong produced coal 1983-2000, so 1988 is already mining; Panian opened 1999, Narra/Molave 2013-16.
+        before: { platforms: [landsat-5], years: [1988, 1989, 1990] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  surigao-nonoc:
+    name: Nonoc and Hinatuan Island nickel mines
+    # Nonoc Island (PNPI, former Nonoc refinery 9.832 N 125.609 E) and Hinatuan Mining Corp's Tagana-an
+    # mine on Hinatuan Island (EMB envelope 9.753-9.813 N, 125.696-125.741 E).
+    center: [125.672, 9.815]
+    box_km: 16
+    months: [4, 9] # Caraga has no dry season; April-September is clearest (see methods)
+    comparisons:
+      - id: landsat-1994-2026
+        title: Between Nonoc's closure and restart (1994–2002) vs. 2026
+        sensor: landsat
+        # Nonoc mined 1974-1986, restarted 2003 and 2010; Tagana-an mined since 1980. The Landsat
+        # archive has no scenes here before 1994, and few after, so the "before" spans nine years.
+        max_scene_cloud: 80
+        before: { platforms: [landsat-5, landsat-7], years: [1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  claver:
+    name: Claver nickel mines
+    # Taganito (TMC) and the Taganito HPAL plant, Cagdianao (PGMC, CMDC/Shenzhou) and Urbiztondo (Adnama),
+    # Claver, Surigao del Norte. Box reaches Urbiztondo in the west and the polygons at 125.91 E.
+    center: [125.839, 9.51]
+    box_km: 16
+    months: [4, 9]
+    comparisons:
+      - id: landsat-1994-2026
+        title: Before the nickel boom (1994–2002) vs. 2026
+        sensor: landsat
+        # TMC mined Taganito from 1987, so this is not "before mining". PGMC began 2006, Adnama 2007-11,
+        # CMDC by 2010, HPAL construction 2010. No Landsat scenes here before 1994.
+        max_scene_cloud: 80
+        before: { platforms: [landsat-5, landsat-7], years: [1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  toledo:
+    name: Toledo copper mine
+    # Carmen pit (MPSA 210, 10.321-10.347 N), Lutopan pit, Biga pit / tailings storage, Malubog reservoir
+    # (10.362 N). The 10.20 N cluster in Tang & Werner is the Naga cement/quarry area, left out.
+    center: [123.73, 10.33]
+    box_km: 12
+    months: [3, 8] # Cebu uplands: March-August is clearest (see methods)
+    comparisons:
+      - id: landsat-1992-2026
+        title: Earlier mining era (1992–95) vs. 2026
+        sensor: landsat
+        # Lutopan mined from 1955, Biga 1963, Carmen 1977; present Carmen phase first ore June 2012.
+        # Only 2 usable March-August scenes in 1988, so the window starts in 1992.
+        before: { platforms: [landsat-5], years: [1992, 1993, 1994, 1995] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  carrascal:
+    name: Carrascal nickel mines
+    # Carrascal Nickel Corp (operator for CTP; centre ~9.376 N 125.907 E), CTP Adlay and Dahican,
+    # Carrascal, Surigao del Sur. Marcventures (Cantilan, 9.23-9.33 N) is south of the box.
+    center: [125.895, 9.39]
+    box_km: 14
+    months: [4, 9]
+    comparisons:
+      - id: landsat-1994-2026
+        title: Before large-scale nickel mining (1994–2002) vs. 2026
+        sensor: landsat
+        # CTP Adlay began Sept 2006, CNC 2009, Dahican 2011. No Landsat scenes here before 1994.
+        max_scene_cloud: 80
+        before: { platforms: [landsat-5, landsat-7], years: [1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  dinagat-loreto:
+    name: Loreto nickel and chromite mines, Dinagat
+    # Sinosteel, Century Peak (Panamaon), Oriental Synergy, Comet/Esperanza and the Krominco block
+    # at the south edge; mine polygons reach 10.47 N.
+    center: [125.648, 10.414]
+    box_km: 13
+    months: [4, 9]
+    comparisons:
+      - id: landsat-1994-2026
+        title: Before large-scale mining (1994–2002) vs. 2024–26
+        sensor: landsat
+        # Earliest verified project development is 2008. Landsat has no scenes here before 1994.
+        # Dinagat is cloudier: every scene is allowed (per-pixel masking does the rest) and the
+        # "after" uses three seasons; with one or two, missed cloud in the south of the box was
+        # counted as new bare ground.
+        max_scene_cloud: 100
+        before: { platforms: [landsat-5, landsat-7], years: [1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002] }
+        after: { platforms: [landsat-8, landsat-9], years: [2024, 2025, 2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  dinagat-tubajon:
+    name: Malinao ridge mines, Tubajon, Dinagat
+    # Oriental Vision/Palhi and SR Metals-Vista Buena at Malinao (10.257 N 125.618 E); Libjo Mining's
+    # agreement reaches the box from the west.
+    center: [125.64, 10.255]
+    box_km: 9
+    months: [4, 9]
+    comparisons:
+      - id: landsat-1994-2026
+        title: Before large-scale mining (1994–2002) vs. 2025–26
+        sensor: landsat
+        # Oriental Vision shipping by 2010, Libjo from 2014, Vista Buena production 2015.
+        max_scene_cloud: 100 # see dinagat-loreto
+        before: { platforms: [landsat-5, landsat-7], years: [1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002] }
+        after: { platforms: [landsat-8, landsat-9], years: [2025, 2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
         before: { years: [2016, 2017, 2018] }
         after: { years: [2026] }

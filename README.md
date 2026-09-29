@@ -1,6 +1,6 @@
 # Bantay Mina
 
-Before-and-after satellite images of mining sites in Northern Luzon, with the vegetation and tree cover
+Before-and-after satellite images of mining sites across the Philippines, with the vegetation and tree cover
 lost at each one. It is a static website. The images and numbers come from one reproducible pipeline,
 and every data source is free and public.
 
@@ -41,8 +41,12 @@ uv run python -m bantay retitle didipio # after editing only a comparison title 
 A site takes about 5–10 minutes, and several sites can be built in parallel. Most of the time goes on
 reading scenes from Planetary Computer.
 
-Current sites: `didipio`, `padcal`, `lepanto`, `runruno`, `dinapigue`, `zambales-nickel`, `itogon`, `barlo`,
-`cagayan-black-sand`, `kasibu-dupax-exploration`.
+Current sites:
+
+- Luzon: `didipio`, `padcal`, `lepanto`, `runruno`, `dinapigue`, `zambales-nickel`, `itogon`, `barlo`,
+  `cagayan-black-sand`, `kasibu-dupax-exploration`.
+- Visayas: `semirara`, `toledo`.
+- Mindanao (Caraga): `claver`, `carrascal`, `surigao-nonoc`, `dinagat-loreto`, `dinagat-tubajon`.
 
 ## Run the site
 
@@ -64,13 +68,21 @@ the base automatically.
 1. Add an entry to `pipeline/sites.yaml`: the centre point, plus before/after years for each comparison.
    The Tang & Werner footprint clusters are a good way to find centres. Keep "before" earlier than the
    first clearing where imagery allows it; if it can't be (for mines older than Landsat), the title must say
-   so, e.g. "Operating mine, 1988–90 vs. 2026". Use only Landsat 5 for pre-2012 dates (Landsat 7 has
-   scan-line gaps).
-2. Run `uv run python -m bantay build <slug>`, then open the images in `site/public/sites/<slug>/` and check
-   them by eye.
-3. Write `site/src/content/sites/<slug>.md` with `analysis: <slug>`. The build fails if any timeline entry
-   or the permit cites a URL that is missing from `sources`.
-4. Describe only what the images show. Claims about water, health or legality belong in the text, with a
+   so, e.g. "Operating mine, 1988–90 vs. 2026". Landsat 7 is usable only before June 2003; after that
+   its images have scan-line gaps. The Landsat archive over Caraga starts in 1994 and is thin, so those
+   sites use every April–September view of 1994–2002, from Landsat 5 and 7 together.
+2. Choose the months. Run `uv run python -m bantay clouds <slug>`. It measures the 2019–2025 Sentinel-2
+   cloud record over the box and ranks runs of months by how much of the box had at least three clear
+   views in the cloudiest year. Set `months` for the site if January–May isn't near the top. Luzon and
+   Semirara: January–May. Caraga: April–September. Toledo: March–August.
+3. Run `uv run python -m bantay build <slug>`, then open the images in `site/public/sites/<slug>/` and check
+   them by eye. White cloud or grey no-data patches in an "after" image get counted as new bare ground.
+   If you see them, add seasons to that side (e.g. `years: [2025, 2026]`) or allow cloudier scenes
+   (`max_scene_cloud: 100`), and change the title to match.
+4. Write `site/src/content/sites/<slug>.md` with `analysis: <slug>` and `islandGroup` (Luzon, Visayas or
+   Mindanao). The build fails if any timeline entry or the permit cites a URL that is missing from
+   `sources`.
+5. Describe only what the images show. Claims about water, health or legality belong in the text, with a
    source.
 
 ## What the numbers mean

@@ -4,6 +4,7 @@ analysis: zambales-nickel
 municipality: Santa Cruz and Candelaria
 province: Zambales
 region: Central Luzon (Region III)
+islandGroup: Luzon
 operator: BenguetCorp Nickel Mines, Inc.; Eramen Minerals, Inc.; LNL Archipelago Minerals, Inc.; Zambales Diversified Metals Corporation
 commodities: [nickel, chromite]
 stage: operating

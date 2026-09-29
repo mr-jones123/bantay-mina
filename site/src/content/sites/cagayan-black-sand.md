@@ -4,6 +4,7 @@ analysis: cagayan-black-sand
 municipality: Aparri
 province: Cagayan
 region: Cagayan Valley (Region II)
+islandGroup: Luzon
 operator: Yinyi Mining / Well Resources; Pacific Offshore Exploration; Riverfront Construction and Great River North Consortium
 commodities: [magnetite sand, sand and gravel]
 stage: closed

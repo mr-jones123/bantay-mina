@@ -114,6 +114,7 @@ const sites = defineCollection({
       municipality: z.string(),
       province: z.string(),
       region: z.string(),
+      islandGroup: z.enum(['Luzon', 'Visayas', 'Mindanao']),
       operator: z.string(),
       commodities: z.array(z.string()).min(1),
       stage: z.enum(['exploration', 'development', 'operating', 'suspended', 'closed']),

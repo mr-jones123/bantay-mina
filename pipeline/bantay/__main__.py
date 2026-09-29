@@ -161,13 +161,24 @@ def retitle(slug: str, config: dict) -> None:
     print(f"{slug}: titles updated")
 
 
+def clouds(slug: str, config: dict) -> None:
+    """Score month windows for a site from the Sentinel-2 cloud record (see bantay/clouds.py)."""
+    from .clouds import report
+
+    site = config["sites"][slug]
+    cfg = {**config["defaults"], **{k: v for k, v in site.items() if k in config["defaults"]}}
+    report(slug, site_grid(tuple(site["center"]), cfg["box_km"], cfg["pixel_m"]), tuple(cfg["months"]))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="bantay")
     sub = parser.add_subparsers(dest="cmd", required=True)
-    for name, help_text in [
-        ("build", "build imagery + stats for one or all sites"),
-        ("retitle", "refresh comparison titles in built JSON from sites.yaml"),
-    ]:
+    commands = {
+        "build": (build, "build imagery + stats for one or all sites"),
+        "retitle": (retitle, "refresh comparison titles in built JSON from sites.yaml"),
+        "clouds": (clouds, "rank month windows by cloud-free coverage, to choose a site's `months`"),
+    }
+    for name, (_, help_text) in commands.items():
         p = sub.add_parser(name, help=help_text)
         p.add_argument("slug", nargs="?")
         p.add_argument("--all", action="store_true")
@@ -177,7 +188,7 @@ def main() -> None:
     slugs = list(config["sites"]) if args.all else [args.slug]
     if not slugs or slugs == [None]:
         parser.error("give a site slug or --all")
-    command = build if args.cmd == "build" else retitle
+    command = commands[args.cmd][0]
     for slug in slugs:
         if slug not in config["sites"]:
             parser.error(f"unknown site {slug!r}; known: {', '.join(config['sites'])}")

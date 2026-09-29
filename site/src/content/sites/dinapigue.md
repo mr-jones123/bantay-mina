@@ -4,6 +4,7 @@ analysis: dinapigue
 municipality: Dinapigue
 province: Isabela
 region: Cagayan Valley (Region II)
+islandGroup: Luzon
 operator: Dinapigue Mining Corporation (100%-owned by Nickel Asia Corporation)
 commodities: [nickel]
 stage: operating

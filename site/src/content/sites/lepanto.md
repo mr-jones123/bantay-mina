@@ -4,6 +4,7 @@ analysis: lepanto
 municipality: Mankayan
 province: Benguet
 region: Cordillera Administrative Region (CAR)
+islandGroup: Luzon
 operator: Lepanto Consolidated Mining Company
 commodities: [gold, silver, copper]
 stage: operating
