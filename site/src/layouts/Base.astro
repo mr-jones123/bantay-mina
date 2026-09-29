@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { asset } from '../lib/paths';
+import { asset, REPO } from '../lib/paths';
 
 interface Props {
   title: string;
@@ -47,8 +47,17 @@ const ogImage = image ? new URL(asset(image), Astro.site ?? Astro.url).href : un
           Basemap © OpenStreetMap contributors, OpenFreeMap.
         </p>
         <p class="muted">
-          Found an error? Every figure on this site is reproducible from the published pipeline. See the
-          <a href={asset('/methods/#corrections')}>corrections policy</a>.
+          Found an error? Every figure on this site is reproducible from the{' '}
+          <a href={REPO}>published pipeline</a>. See the{' '}
+          <a href={asset('/methods/#corrections')}>corrections policy</a>, or{' '}
+          <a href={`${REPO}/issues`}>open an issue</a>.
+        </p>
+        <p class="contact">
+          <a href="mailto:lacapxyniljhed@gmail.com">lacapxyniljhed@gmail.com</a>
+          <span aria-hidden="true">·</span>
+          <a href="https://www.linkedin.com/in/xy-lacap-76ba9029a/">LinkedIn</a>
+          <span aria-hidden="true">·</span>
+          <a href="https://github.com/mr-jones123">GitHub</a>
         </p>
       </div>
     </footer>
@@ -86,5 +95,13 @@ const ogImage = image ? new URL(asset(image), Astro.site ?? Astro.url).href : un
     border-top: 1px solid var(--line);
     padding: 1.5rem 0 2.5rem;
     font-size: 0.85rem;
+  }
+  .contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
   }
 </style>

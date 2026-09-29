@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import { REPO } from '../lib/paths';
 ---
 
 <Base
@@ -13,8 +14,9 @@ import Base from '../layouts/Base.astro';
     </header>
 
     <p>
-      Everything here comes from free, public data and one open-source script (<code>pipeline/</code> in the
-      project repository). Anyone can rerun it and should get the same pictures and the same hectares.
+      Everything here comes from free, public data and one open-source script (<code>pipeline/</code> in the{' '}
+      <a href={REPO}>project repository</a>). Anyone can rerun it and should get the same pictures and the same
+      hectares.
     </p>
 
     <h2>Before-and-after images</h2>
@@ -146,8 +148,9 @@ import Base from '../layouts/Base.astro';
 
     <h2 id="corrections">Corrections</h2>
     <p>
-      If a date, figure or source is wrong, open an issue on the project repository with a link to the
-      evidence. Corrections are made openly and noted on the affected page with the date they were made.
+      If a date, figure or source is wrong, <a href={`${REPO}/issues`}>open an issue</a> on the project
+      repository with a link to the evidence. Corrections are made openly and noted on the affected page with
+      the date they were made.
     </p>
   </article>
 </Base>

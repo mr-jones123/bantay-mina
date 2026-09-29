@@ -1,13 +1,73 @@
 # Bantay Mina
 
-Before-and-after satellite images of mining sites across the Philippines, with the vegetation and tree cover
-lost at each one. It is a static website. The images and numbers come from one reproducible pipeline,
-and every data source is free and public.
+Before-and-after satellite images of mining sites across the Philippines, with the vegetation, tree
+cover and shoreline change measured at each one. *Bantay* means "watch" or "guard".
+
+The site shows what happened to the land, using images anyone can check. It is a static website. Every
+image and number comes from one reproducible pipeline, and every data source is free and public.
+
+## Sites
+
+Seventeen sites: 10 in Luzon, 2 in the Visayas and 5 in Mindanao. "Green → bare" is the area that went
+from dense vegetation to bare ground or water between the two images of the first comparison. Each page
+also has a sharper Sentinel-2 comparison from 2016–18 to 2026.
+
+| Island group | Site | Province | First comparison | Green → bare |
+|---|---|---|---|---|
+| Luzon | Barlo copper–gold–zinc mine (closed 1984) | Pangasinan | Four years after closure (1988–90) vs. 2026 | 9 ha |
+| Luzon | Cagayan River mouth black sand and dredging | Cagayan | Before the river dredging (2020) vs. 2024 | 330 ha¹ |
+| Luzon | Didipio gold–copper mine | Nueva Vizcaya | Before construction (2005–07) vs. 2026 | 172 ha |
+| Luzon | Dinapigue nickel mine | Isabela | Before mine development (2003–06) vs. 2026 | 72 ha |
+| Luzon | Itogon gold mining district | Benguet | Late large-mine era (1988–90) vs. 2026 | 29 ha |
+| Luzon | Kasibu–Dupax exploration (baseline) | Nueva Vizcaya | Before exploration drilling (2024) vs. 2026 | 20 ha |
+| Luzon | Lepanto gold–copper mine | Benguet | Operating mine, 1988–90 vs. 2026 | 16 ha |
+| Luzon | Padcal copper–gold mine | Benguet | Operating mine, 1988–90 vs. 2026 | 143 ha |
+| Luzon | Runruno gold mine | Nueva Vizcaya | Before mine construction (2006–09) vs. 2026 | 116 ha |
+| Luzon | Santa Cruz–Candelaria nickel mines | Zambales | Before the nickel expansion (2002–05) vs. 2026 | 340 ha |
+| Visayas | Semirara Island coal mines | Antique | Unong pit era (1988–90) vs. 2026 | 299 ha, plus ~2,370 ha of sea turned to land |
+| Visayas | Toledo copper mine | Cebu | Earlier mining era (1992–95) vs. 2026 | 201 ha |
+| Mindanao | Carrascal–Cantilan nickel mines | Surigao del Sur | Before large-scale nickel mining (1994–2002) vs. 2026 | 1,487 ha |
+| Mindanao | Claver nickel mines and Taganito HPAL plant | Surigao del Norte | Before the nickel boom (1994–2002) vs. 2026 | 2,303 ha |
+| Mindanao | Loreto nickel–chromite mines | Dinagat Islands | Before large-scale mining (1994–2002) vs. 2024–26 | 412 ha |
+| Mindanao | Nonoc and Hinatuan Island nickel mines | Surigao del Norte | Between Nonoc's closure and restart (1994–2002) vs. 2026 | 419 ha |
+| Mindanao | Tubajon–Libjo nickel mines | Dinagat Islands | Before large-scale mining (1994–2002) vs. 2025–26 | 220 ha |
+
+¹ Mostly rice fields ploughed or harvested in one year and green in the other, not mining. The page says so.
+
+## Ground rules
+
+- **Facts, not accusations.** Images show land cover. They do not show pollution, health effects or
+  whether an operation is legal. Those claims appear only in the text, each with a cited source.
+  Allegations are attributed to the people who made them.
+- **The build checks the sources.** A site page whose permit or timeline cites a URL that isn't in its
+  source list fails the build.
+- **Honest images.** Both sides of a comparison cover the same box on the same grid, use the same months
+  of the year and the same colour stretch. Titles say when a "before" image is not before mining.
+- **No people on the map.** No homes, villages, barricades or individuals are mapped. Indigenous
+  communities are named only as public sources name them.
+- **Permit boundaries are not on the site yet.** Mapped mine footprints show where land was dug, not
+  where a company is allowed to dig. Until the Mines and Geosciences Bureau's tenement maps are added, the
+  site doesn't say whether clearing happened inside or outside a permit.
+
+## Data sources
+
+| Data | Use | Licence |
+|---|---|---|
+| Landsat 5/7/8/9 Collection 2 Level-2 (USGS/NASA) | "before" images from 1988, "after" images | Public domain |
+| Sentinel-2 Level-2A (ESA Copernicus) | 10 m images from 2016, and the cloud record | Free and open (Copernicus) |
+| Hansen et al., Global Forest Change v1.13 | tree cover loss by year, land/water mask | CC BY 4.0 |
+| Tang & Werner 2023, global mining footprint | mapped mine outlines | CC BY 4.0 |
+| OpenStreetMap via OpenFreeMap | basemap | ODbL |
+
+Landsat and Sentinel-2 are read through Microsoft Planetary Computer's public STAC API, with no API key.
+
+## Repository layout
 
 ```
 pipeline/   Python: builds composites, overlays and figures for each site
-  sites.yaml     analysis boxes and before/after windows per site
-  bantay/        grid, imagery (STAC), change (NDVI), forest (Hansen), footprint (Tang & Werner), render
+  sites.yaml     analysis boxes, months and before/after windows per site
+  bantay/        grid, imagery (STAC), clouds, change (NDVI/NDWI), forest (Hansen), footprint, render
+  bantay/ml/     experimental mining classifier (not used on the website)
 site/       Astro: static site (MapLibre + OpenFreeMap basemap)
   src/content/sites/*.md    editorial content per site (sources required by schema)
   src/data/analysis/*.json  written by the pipeline, never edited by hand
@@ -16,10 +76,9 @@ site/       Astro: static site (MapLibre + OpenFreeMap basemap)
 
 ## Run the pipeline
 
-Needs [uv](https://docs.astral.sh/uv/). No API keys: imagery comes from Microsoft Planetary Computer's
-public STAC API.
+Needs [uv](https://docs.astral.sh/uv/).
 
-One-off download of the Tang & Werner (2023) mine footprints (≈320 MB, CC BY 4.0):
+One-off download of the Tang & Werner (2023) mine footprints (≈320 MB):
 
 ```sh
 cd pipeline
@@ -34,19 +93,13 @@ Then build a site. The first run also downloads the Hansen tree cover, loss and 
 (≈210 MB per 10° tile):
 
 ```sh
+uv run python -m bantay clouds didipio  # which months give clear images here?
 uv run python -m bantay build didipio   # or: --all
 uv run python -m bantay retitle didipio # after editing only a comparison title in sites.yaml
 ```
 
-A site takes about 5–10 minutes, and several sites can be built in parallel. Most of the time goes on
-reading scenes from Planetary Computer.
-
-Current sites:
-
-- Luzon: `didipio`, `padcal`, `lepanto`, `runruno`, `dinapigue`, `zambales-nickel`, `itogon`, `barlo`,
-  `cagayan-black-sand`, `kasibu-dupax-exploration`.
-- Visayas: `semirara`, `toledo`.
-- Mindanao (Caraga): `claver`, `carrascal`, `surigao-nonoc`, `dinagat-loreto`, `dinagat-tubajon`.
+A site takes about 3–15 minutes, depending on box size, and several sites can be built in parallel.
+Most of the time goes on reading scenes from Planetary Computer.
 
 ## Run the site
 
@@ -101,70 +154,29 @@ the base automatically.
 
 The full explanation is on the site's Methods page.
 
-## Mining classifier (candidate finder)
+## Mining classifier (experimental, not on the website)
 
 A LightGBM model that looks at *open ground* (not dense green, not water) and scores how much it looks
-like mine ground. It produces a review list, never a published finding.
+like mine ground. It was meant to find new mining that no dataset maps yet. It is not part of the
+website: in review it flagged too many villages, riverbeds and farm fields to be useful. The code stays
+here for later work.
 
 ```sh
 uv run python -m bantay.ml features            # cache 20 m feature stacks per region (~15 min, parallelisable)
 uv run python -m bantay.ml train               # leave-one-region-out CV, final model, pipeline/ML_REPORT.md
-uv run python -m bantay.ml predict --year 2026 # candidates for the Northern Luzon regions
+uv run python -m bantay.ml predict --year 2026 # candidates for the Northern Luzon test regions
 ```
 
-- **Regions** are defined in `pipeline/ml_regions.yaml`. The model trains on 10 regions outside Northern
-  Luzon (Mindanao and Dinagat nickel, Cebu, Palawan, Masbate, Semirara, Marinduque, Negros, southern
-  Zambales). It is scored once on 5 Northern Luzon regions it never saw during training.
+- **Regions** are defined in `pipeline/ml_regions.yaml`: 10 training regions outside Northern Luzon, and 5
+  Northern Luzon test regions the model never sees during training.
 - **Labels:** open ground inside Tang & Werner mine polygons counts as mining. Open ground more than 300 m
-  from any mapped mine is a look-alike, labelled with its ESA WorldCover class (cropland, built-up,
-  bare/sparse, grass/shrub, other).
-- **Features** (`bantay/ml/features.py`), all measured in the dry season:
-  - Sentinel-2 bands including the shortwave-infrared B11 and B12
-  - iron-oxide, clay and bare-soil indices
-  - the same measures three years earlier, and the change since
-  - share of bare ground within 220 m and 500 m, and local texture
-  - Sentinel-1 radar backscatter
-  - slope, and terrain position relative to the surrounding 500 m
-  - JRC surface-water occurrence since 1984
-  - Hansen tree cover in 2000, and years since tree loss
-  - Absolute elevation is left out on purpose: the first model used it as a shortcut.
+  from any mapped mine is a look-alike, labelled with its ESA WorldCover class.
 - **Scores** are in `pipeline/ML_REPORT.md`. On Northern Luzon, average precision is 0.85. At the review
-  threshold, it finds about 93% of mapped mine ground, but only about 55% of what it flags is mine ground.
-  So the list needs a person to check it.
-- **Known false alarms:**
-  - riverbeds and sediment in narrow mountain valleys
-  - dry-season farm plots on slopes
-  - dense built-up areas (Baguio)
-  - beaches
-- **Candidates** are written to `pipeline/data/ml/candidates/<region>-<year>/`: `candidates.geojson`,
-  `candidates.csv`, before/after images and `meta.json`. They are not committed and not on the website.
-
-### Review page (local only)
-
-```sh
-cd site && npm run dev   # then open http://localhost:4321/review
-```
-
-- **Where it runs:** the page and its API exist only under `astro dev`, through the `integrations/review.mjs`
-  integration. `npm run build` never includes them, so unreviewed candidates can't reach the published site.
-- **Run model:** pick a region and year and press **Run model**. The dev server runs `bantay.ml features`
-  and then `predict`, and shows the log as it goes. Region and year are checked against `ml_regions.yaml`
-  before anything runs.
-- **Reviewing:** each candidate has a before/after slider (three dry seasons apart), its outline, a map
-  with the run's own Sentinel-2 image, and links to sharper imagery. Tick the signs you can see (keys
-  1–7): colour, engineered shapes, haul road, cut into a slope, stays bare, near other mining, muddy water
-  downstream. The tally suggests a call: 3 or more signs, at least 2 of them dug-ground signs (the first
-  four), looks like mine ground. Then decide:
-  - **Mine ground** (C): pit, dump, pad or tailings pond.
-  - **Mining-affected, not a pit** (A): e.g. sediment or tailings washed downstream.
-  - **Not mining** (R), with a reason: riverbed, farmland, built-up, beach, landslide, quarry, road, cloud.
-  - **Unsure** (U).
-
-  Move with J / K. The "Look-alikes" list in the checklist covers the usual false alarms.
-- **Where decisions go:** `pipeline/data/ml/reviews/<region>.json`, with each patch's outline, so they can
-  become training labels. Re-running `predict` re-links each earlier decision to the new patch that
-  overlaps it most.
-- **Decisions aren't findings.** A confirmed candidate goes public only as a sourced site page.
+  threshold it finds about 93% of mapped mine ground, but only about 55% of what it flags is mine ground.
+- **Review page (local only):** `cd site && npm run dev`, then open `http://localhost:4321/review`. It exists
+  only under `astro dev` (through `integrations/review.mjs`); `npm run build` never includes it. Reviewers
+  tick the visible signs of a mine and mark each candidate as mine ground, mining-affected, not mining or
+  unsure. Candidates and decisions are saved under `pipeline/data/ml/`, which is not committed.
 
 ## Not done yet
 
@@ -172,7 +184,15 @@ cd site && npm run dev   # then open http://localhost:4321/review
   outside a permit.
 - NLMRC's Kasibu exploration permit: no public map or coordinates yet, so it has no image box. The
   Dupax (Woggle) box is placed from the company's own published target map.
+- More sites: Palawan (Rio Tuba, Brooke's Point), Masbate (Aroroy), Marinduque (Marcopper), Davao de Oro,
+  Zamboanga.
 - The 99 ha cluster near Tuba, Benguet (120.566, 16.168) looks like a limestone quarry and cement
   plant; not verified and not included.
-- Reviewing the candidate lists. Confirmed and rejected candidates should become new labels, especially
-  the rejected ones, so the next model learns those look-alikes.
+
+## Corrections and contact
+
+If a date, figure or source is wrong, [open an issue](https://github.com/mr-jones123/bantay-mina/issues)
+with a link to the evidence. Corrections are made openly and noted on the affected page.
+
+Contact: [lacapxyniljhed@gmail.com](mailto:lacapxyniljhed@gmail.com) ·
+[LinkedIn](https://www.linkedin.com/in/xy-lacap-76ba9029a/) · [GitHub](https://github.com/mr-jones123)
