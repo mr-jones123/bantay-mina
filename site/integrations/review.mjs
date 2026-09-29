@@ -23,8 +23,12 @@ const ML = path.join(PIPELINE, 'data', 'ml');
 const CANDIDATES = path.join(ML, 'candidates');
 const REVIEWS = path.join(ML, 'reviews');
 const PREFIX = '/__review/api';
-const DECISIONS = new Set(['confirm', 'reject', 'unsure']);
+// confirm = mine ground (pit, dump, pad, pond); affected = land changed by mining but not dug
+// (downstream sediment or tailings); reject = something else (with a reason); unsure = look again.
+const DECISIONS = new Set(['confirm', 'affected', 'reject', 'unsure']);
 const REASONS = new Set(['riverbed', 'farmland', 'built-up', 'beach', 'landslide', 'quarry', 'road', 'cloud-or-shadow', 'other']);
+// The review checklist: which signs of a mine the reviewer saw. Stored so decisions are comparable.
+const SIGNS = new Set(['colour', 'engineered-shapes', 'haul-road', 'cut-into-slope', 'stays-bare', 'near-mining', 'muddy-water-downstream']);
 const IMAGES = new Set(['before.webp', 'after.webp']);
 const LOG_LINES = 400;
 
@@ -248,6 +252,7 @@ async function handle(req, res) {
       decision: b.decision,
       reason: b.decision === 'reject' ? (b.reason ?? 'other') : null,
       note: String(b.note ?? '').slice(0, 2000),
+      signs: Array.isArray(b.signs) ? b.signs.filter((s) => SIGNS.has(s)) : [],
       reviewedAt: new Date().toISOString(),
       areaHa: p.areaHa,
       meanProbability: p.meanProbability,

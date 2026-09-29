@@ -139,9 +139,16 @@ cd site && npm run dev   # then open http://localhost:4321/review
   and then `predict`, and shows the log as it goes. Region and year are checked against `ml_regions.yaml`
   before anything runs.
 - **Reviewing:** each candidate has a before/after slider (three dry seasons apart), its outline, a map
-  with the run's own Sentinel-2 image, and links to sharper imagery. Mark it **Looks like mining** (C),
-  **Not mining** (R, with a reason: riverbed, farmland, built-up, beach, landslide, quarry, road, cloud),
-  or **Unsure** (U). Move with J / K.
+  with the run's own Sentinel-2 image, and links to sharper imagery. Tick the signs you can see (keys
+  1–7): colour, engineered shapes, haul road, cut into a slope, stays bare, near other mining, muddy water
+  downstream. The tally suggests a call: 3 or more signs, at least 2 of them dug-ground signs (the first
+  four), looks like mine ground. Then decide:
+  - **Mine ground** (C): pit, dump, pad or tailings pond.
+  - **Mining-affected, not a pit** (A): e.g. sediment or tailings washed downstream.
+  - **Not mining** (R), with a reason: riverbed, farmland, built-up, beach, landslide, quarry, road, cloud.
+  - **Unsure** (U).
+
+  Move with J / K. The "Look-alikes" list in the checklist covers the usual false alarms.
 - **Where decisions go:** `pipeline/data/ml/reviews/<region>.json`, with each patch's outline, so they can
   become training labels. Re-running `predict` re-links each earlier decision to the new patch that
   overlaps it most.

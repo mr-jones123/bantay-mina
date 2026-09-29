@@ -42,7 +42,8 @@ import '../styles/global.css';
       <aside class="list">
         <div class="filters" role="group" aria-label="Filter by decision">
           <button data-filter="unreviewed" class="on">Unreviewed</button>
-          <button data-filter="confirm">Confirmed</button>
+          <button data-filter="confirm">Mine ground</button>
+          <button data-filter="affected">Affected</button>
           <button data-filter="reject">Rejected</button>
           <button data-filter="unsure">Unsure</button>
           <button data-filter="all">All</button>
@@ -72,8 +73,32 @@ import '../styles/global.css';
         <dl class="facts" id="facts"></dl>
         <p class="small links" id="links"></p>
 
+        <fieldset class="checklist" id="checklist">
+          <legend class="label">Signs of a mine you can see (keys 1–7)</legend>
+          <label><input type="checkbox" value="colour" /> <kbd>1</kbd> <b>Colour</b> — orange/red laterite, grey-white rock or tailings, milky/orange/turquoise pond</label>
+          <label><input type="checkbox" value="engineered-shapes" /> <kbd>2</kbd> <b>Engineered shapes</b> — terraced benches or pit rings, straight dam walls, flat sharp-edged pads, rectangular ponds</label>
+          <label><input type="checkbox" value="haul-road" /> <kbd>3</kbd> <b>Haul road</b> — wide pale road that ends at the patch, switchbacks, road to a pier (not a map overlay line)</label>
+          <label><input type="checkbox" value="cut-into-slope" /> <kbd>4</kbd> <b>Cut into a slope or ridge</b> — bare ground on a hillside, pale waste fan spilling downhill</label>
+          <label><input type="checkbox" value="stays-bare" /> <kbd>5</kbd> <b>Stays bare and grows</b> — already open three years earlier, bigger now</label>
+          <label><input type="checkbox" value="near-mining" /> <kbd>6</kbd> <b>Near other mining</b> — pits, stockpiles or a plant within about 1 km</label>
+          <label><input type="checkbox" value="muddy-water-downstream" /> <kbd>7</kbd> <b>Muddy water downstream</b> — creek below turns orange or grey</label>
+          <p class="small" id="tally"></p>
+          <details class="small">
+            <summary>Look-alikes</summary>
+            <ul>
+              <li><b>Riverbed / sandbar</b>: long and curved along a channel, braided lines, water beside it, no road in.</li>
+              <li><b>Farm plot</b>: soft edges, part of a patchwork, green again in other years.</li>
+              <li><b>Landslide</b>: tongue or fan running straight downhill from a sharp scar; no road, no terraces.</li>
+              <li><b>Quarry</b>: pit with benches and a road but pale limestone or gravel, near a road or town. Reject as <i>quarry</i>.</li>
+              <li><b>Built-up</b>: grid of small bright roofs and streets. <b>Beach</b>: thin strip along surf. <b>Burn scar</b>: dark, green next year.</li>
+              <li><b>Only "near mining" and "stays bare"?</b> Riverbeds have those too. That alone is not a mine.</li>
+            </ul>
+          </details>
+        </fieldset>
+
         <div class="decide">
-          <button data-decision="confirm" class="confirm">Looks like mining <kbd>C</kbd></button>
+          <button data-decision="confirm" class="confirm" title="Dug ground: pit, waste dump, pad, tailings pond">Mine ground <kbd>C</kbd></button>
+          <button data-decision="affected" class="affected" title="Changed by mining but not dug: sediment or tailings washed downstream">Mining-affected, not a pit <kbd>A</kbd></button>
           <button data-decision="reject" class="reject">Not mining <kbd>R</kbd></button>
           <button data-decision="unsure">Unsure <kbd>U</kbd></button>
           <button data-decision="clear" class="ghost">Clear <kbd>0</kbd></button>
@@ -105,7 +130,8 @@ import '../styles/global.css';
         <div id="map" class="map"></div>
         <p class="legend small">
           <span><i style="background:#ffd23f"></i> unreviewed</span>
-          <span><i style="background:#ff3b30"></i> confirmed</span>
+          <span><i style="background:#ff3b30"></i> mine ground</span>
+          <span><i style="background:#b36bff"></i> mining-affected</span>
           <span><i style="background:#9a9a9a"></i> rejected</span>
           <span><i style="background:#4fc3f7"></i> unsure</span>
         </p>
@@ -125,8 +151,10 @@ import '../styles/global.css';
 
       setWorkerUrl(workerUrl);
 
-      type Decision = 'confirm' | 'reject' | 'unsure';
-      interface Review { reviewId: string; decision: Decision; reason: string | null; note: string; reviewedAt: string }
+      type Decision = 'confirm' | 'affected' | 'reject' | 'unsure';
+      interface Review {
+        reviewId: string; decision: Decision; reason: string | null; note: string; signs: string[]; reviewedAt: string;
+      }
       interface Props {
         id: string; areaHa: number; meanProbability: number; touchesMappedMine: boolean;
         ndviThreeYearsEarlier: number; lon: number; lat: number;
@@ -142,7 +170,25 @@ import '../styles/global.css';
       interface Job { id: string; region: string; year: number; status: string; log: string[] }
 
       const API = '/__review/api';
-      const COLORS: Record<string, string> = { unreviewed: '#ffd23f', confirm: '#ff3b30', reject: '#9a9a9a', unsure: '#4fc3f7' };
+      const COLORS: Record<string, string> = {
+        unreviewed: '#ffd23f', confirm: '#ff3b30', affected: '#b36bff', reject: '#9a9a9a', unsure: '#4fc3f7',
+      };
+      const LABELS: Record<string, string> = {
+        unreviewed: 'unreviewed', confirm: 'mine ground', affected: 'mining-affected', reject: 'not mining', unsure: 'unsure',
+      };
+      const checklist = () => [...document.querySelectorAll<HTMLInputElement>('#checklist input[type=checkbox]')];
+      // Engineered signs separate mines from riverbeds and farms; context signs alone do not.
+      const ENGINEERED = new Set(['colour', 'engineered-shapes', 'haul-road', 'cut-into-slope']);
+      function updateTally() {
+        const ticked = checklist().filter((b) => b.checked).map((b) => b.value);
+        const engineered = ticked.filter((s) => ENGINEERED.has(s)).length;
+        let hint: string;
+        if (ticked.length >= 3 && engineered >= 2) hint = 'looks like mine ground (C)';
+        else if (ticked.length && engineered === 0) hint = 'no dug-ground signs: riverbed, farm or mining-affected sediment? (R or A)';
+        else if (ticked.length) hint = 'not enough to call it: check sharper imagery, or Unsure (U)';
+        else hint = 'tick what you can see';
+        $('tally').textContent = `${ticked.length} of 7 signs (${engineered} of dug ground) → ${hint}`;
+      }
       const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
       const state = {
@@ -244,11 +290,11 @@ import '../styles/global.css';
         state.shown = state.all.filter((c) =>
           (!state.hideMapped || !c.properties.touchesMappedMine) &&
           (state.filter === 'all' || status(c) === state.filter));
-        const counts = { unreviewed: 0, confirm: 0, reject: 0, unsure: 0 } as Record<string, number>;
+        const counts = { unreviewed: 0, confirm: 0, affected: 0, reject: 0, unsure: 0 } as Record<string, number>;
         for (const c of state.all) if (!state.hideMapped || !c.properties.touchesMappedMine) counts[status(c)]++;
         $('counts').textContent =
-          `${state.shown.length} shown · ${counts.unreviewed} unreviewed, ${counts.confirm} confirmed, ` +
-          `${counts.reject} rejected, ${counts.unsure} unsure`;
+          `${state.shown.length} shown · ${counts.unreviewed} unreviewed, ${counts.confirm} mine ground, ` +
+          `${counts.affected} affected, ${counts.reject} rejected, ${counts.unsure} unsure`;
         const list = $('list');
         list.replaceChildren(...state.shown.map((c, i) => {
           const li = document.createElement('li');
@@ -316,7 +362,7 @@ import '../styles/global.css';
         const p = c.properties;
         $('cand-title').textContent = p.id;
         const st = status(c);
-        $('cand-status').textContent = st + (p.review?.reason ? ` · ${p.review.reason}` : '');
+        $('cand-status').textContent = LABELS[st] + (p.review?.reason ? ` · ${p.review.reason}` : '');
         $('cand-status').style.background = COLORS[st];
         drawCrop($<HTMLCanvasElement>('before-canvas'), state.before, c);
         drawCrop($<HTMLCanvasElement>('after-canvas'), state.after, c);
@@ -343,6 +389,9 @@ import '../styles/global.css';
         }));
         $<HTMLSelectElement>('reason').value = p.review?.reason ?? 'riverbed';
         $<HTMLTextAreaElement>('note').value = p.review?.note ?? '';
+        const signs = new Set(p.review?.signs ?? []);
+        for (const b of checklist()) b.checked = signs.has(b.value);
+        updateTally();
         if (fly) highlight(c);
       }
 
@@ -357,11 +406,12 @@ import '../styles/global.css';
               region: state.meta.region, year: state.meta.year, candidateId: c.properties.id, decision,
               reason: decision === 'reject' ? $<HTMLSelectElement>('reason').value : null,
               note: $<HTMLTextAreaElement>('note').value,
+              signs: checklist().filter((b) => b.checked).map((b) => b.value),
             }),
           });
           c.properties.review = review;
           c.properties.reviewId = review?.reviewId ?? null;
-          saveStatus.textContent = decision ? `Saved: ${decision}` : 'Cleared';
+          saveStatus.textContent = decision ? `Saved: ${LABELS[decision]}` : 'Cleared';
           (map.getSource('cands') as GeoJSONSource | undefined)?.setData(collection(state.all));
           const nextId = decision && state.filter === 'unreviewed'
             ? state.shown[state.index + 1]?.properties.id
@@ -493,6 +543,7 @@ import '../styles/global.css';
       for (const b of document.querySelectorAll<HTMLButtonElement>('[data-decision]')) {
         b.addEventListener('click', () => decide(b.dataset.decision === 'clear' ? null : (b.dataset.decision as Decision)));
       }
+      for (const b of checklist()) b.addEventListener('change', updateTally);
       document.addEventListener('keydown', (e) => {
         const t = e.target as HTMLElement;
         if (t.matches('textarea, input[type=number], select') || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -502,7 +553,13 @@ import '../styles/global.css';
         else if (key === 'c') decide('confirm');
         else if (key === 'r') decide('reject');
         else if (key === 'u') decide('unsure');
+        else if (key === 'a') decide('affected');
         else if (key === '0') decide(null);
+        else if (/^[1-7]$/.test(key)) {
+          const box = checklist()[Number(key) - 1];
+          box.checked = !box.checked;
+          updateTally();
+        }
         else if (key === 'o') {
           const box = $<HTMLInputElement>('show-outline');
           box.checked = !box.checked;
@@ -755,6 +812,37 @@ import '../styles/global.css';
       }
       .decide .reject {
         border-color: #6b6b6b;
+      }
+      .decide .affected {
+        border-color: #b36bff;
+      }
+      .checklist {
+        display: grid;
+        gap: 0.25rem;
+        margin: 0;
+        padding: 0.6rem 0.7rem;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--paper);
+        font-size: 0.82rem;
+        line-height: 1.35;
+      }
+      .checklist legend {
+        padding: 0 0.3rem;
+      }
+      .checklist label {
+        display: flex;
+        gap: 0.4rem;
+        align-items: baseline;
+        cursor: pointer;
+      }
+      #tally {
+        margin: 0.3rem 0 0;
+        font-family: var(--mono);
+      }
+      .checklist ul {
+        margin: 0.3rem 0 0;
+        padding-left: 1.1rem;
       }
       .decide .ghost {
         background: transparent;
