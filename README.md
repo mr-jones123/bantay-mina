@@ -124,9 +124,28 @@ uv run python -m bantay.ml predict --year 2026 # candidates for the Northern Luz
   - dry-season farm plots on slopes
   - dense built-up areas (Baguio)
   - beaches
-- **Candidates** are written to `pipeline/data/ml/candidates/<region>-<year>/`. Each run produces
-  `candidates.geojson`, `candidates.csv` and a `review.png` contact sheet. They are not committed and not
-  on the website. Each candidate starts as `review: unreviewed`.
+- **Candidates** are written to `pipeline/data/ml/candidates/<region>-<year>/`: `candidates.geojson`,
+  `candidates.csv`, before/after images and `meta.json`. They are not committed and not on the website.
+
+### Review page (local only)
+
+```sh
+cd site && npm run dev   # then open http://localhost:4321/review
+```
+
+- **Where it runs:** the page and its API exist only under `astro dev`, through the `integrations/review.mjs`
+  integration. `npm run build` never includes them, so unreviewed candidates can't reach the published site.
+- **Run model:** pick a region and year and press **Run model**. The dev server runs `bantay.ml features`
+  and then `predict`, and shows the log as it goes. Region and year are checked against `ml_regions.yaml`
+  before anything runs.
+- **Reviewing:** each candidate has a before/after slider (three dry seasons apart), its outline, a map
+  with the run's own Sentinel-2 image, and links to sharper imagery. Mark it **Looks like mining** (C),
+  **Not mining** (R, with a reason: riverbed, farmland, built-up, beach, landslide, quarry, road, cloud),
+  or **Unsure** (U). Move with J / K.
+- **Where decisions go:** `pipeline/data/ml/reviews/<region>.json`, with each patch's outline, so they can
+  become training labels. Re-running `predict` re-links each earlier decision to the new patch that
+  overlaps it most.
+- **Decisions aren't findings.** A confirmed candidate goes public only as a sourced site page.
 
 ## Not done yet
 

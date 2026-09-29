@@ -1,0 +1,799 @@
+---
+// Local-only review page for the mining classifier. Injected by integrations/review.mjs under
+// `astro dev` only; it is never part of `astro build`.
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Review candidates · Bantay Mina (local)</title>
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand">
+        <strong>Bantay Mina</strong>
+        <span class="label">Local review · not published</span>
+      </div>
+      <label class="field">
+        <span class="label">Run</span>
+        <select id="run-select"></select>
+      </label>
+      <form id="run-form" class="field run-form">
+        <span class="label">New run</span>
+        <select id="region-select" required></select>
+        <input id="year-input" type="number" min="2019" required />
+        <button type="submit" id="run-button">Run model</button>
+      </form>
+      <span id="job-status" class="mono small muted"></span>
+    </header>
+
+    <details id="log-box" class="log">
+      <summary class="label">Run log</summary>
+      <pre id="log"></pre>
+    </details>
+
+    <p id="empty" class="empty" hidden></p>
+
+    <main id="app" class="grid" hidden>
+      <aside class="list">
+        <div class="filters" role="group" aria-label="Filter by decision">
+          <button data-filter="unreviewed" class="on">Unreviewed</button>
+          <button data-filter="confirm">Confirmed</button>
+          <button data-filter="reject">Rejected</button>
+          <button data-filter="unsure">Unsure</button>
+          <button data-filter="all">All</button>
+        </div>
+        <label class="small">
+          <input type="checkbox" id="hide-mapped" checked /> Hide patches touching mapped mines
+        </label>
+        <p id="counts" class="small muted"></p>
+        <ol id="list"></ol>
+      </aside>
+
+      <section class="viewer">
+        <div class="viewer-head">
+          <h1 id="cand-title" class="mono">—</h1>
+          <span id="cand-status" class="pill"></span>
+        </div>
+        <div class="stage" id="stage">
+          <canvas id="after-canvas" width="512" height="512"></canvas>
+          <canvas id="before-canvas" width="512" height="512"></canvas>
+          <div class="handle" aria-hidden="true"></div>
+          <input id="slider" class="range" type="range" min="0" max="100" value="50" step="0.5" aria-label="Compare before and after" />
+          <span class="tag left mono" id="tag-before"></span>
+          <span class="tag right mono" id="tag-after"></span>
+        </div>
+        <label class="small"><input type="checkbox" id="show-outline" checked /> Outline (O)</label>
+
+        <dl class="facts" id="facts"></dl>
+        <p class="small links" id="links"></p>
+
+        <div class="decide">
+          <button data-decision="confirm" class="confirm">Looks like mining <kbd>C</kbd></button>
+          <button data-decision="reject" class="reject">Not mining <kbd>R</kbd></button>
+          <button data-decision="unsure">Unsure <kbd>U</kbd></button>
+          <button data-decision="clear" class="ghost">Clear <kbd>0</kbd></button>
+        </div>
+        <label class="field reason">
+          <span class="label">If not mining, what is it?</span>
+          <select id="reason">
+            <option value="riverbed">Riverbed / sandbar</option>
+            <option value="farmland">Farmland</option>
+            <option value="built-up">Built-up</option>
+            <option value="beach">Beach / coast</option>
+            <option value="landslide">Landslide</option>
+            <option value="quarry">Quarry</option>
+            <option value="road">Road / construction</option>
+            <option value="cloud-or-shadow">Cloud or shadow</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="label">Note</span>
+          <textarea id="note" rows="2" placeholder="What you saw, sources checked…"></textarea>
+        </label>
+        <p class="small muted" id="save-status">
+          <kbd>J</kbd>/<kbd>K</kbd> next / previous · decisions save to pipeline/data/ml/reviews/
+        </p>
+      </section>
+
+      <section class="mapcol">
+        <div id="map" class="map"></div>
+        <p class="legend small">
+          <span><i style="background:#ffd23f"></i> unreviewed</span>
+          <span><i style="background:#ff3b30"></i> confirmed</span>
+          <span><i style="background:#9a9a9a"></i> rejected</span>
+          <span><i style="background:#4fc3f7"></i> unsure</span>
+        </p>
+        <p class="small muted">
+          Background: the run's own Sentinel-2 image ("after"). A decision here is a label for the model, not a
+          finding. Nothing reaches the public site without a sourced site page.
+        </p>
+      </section>
+    </main>
+
+    <script>
+      import { Map as MapLibreMap, NavigationControl, Popup, setWorkerUrl } from 'maplibre-gl';
+      import type { GeoJSONSource, MapLayerMouseEvent } from 'maplibre-gl';
+      import type { FeatureCollection, Geometry } from 'geojson';
+      import 'maplibre-gl/dist/maplibre-gl.css';
+      import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+
+      setWorkerUrl(workerUrl);
+
+      type Decision = 'confirm' | 'reject' | 'unsure';
+      interface Review { reviewId: string; decision: Decision; reason: string | null; note: string; reviewedAt: string }
+      interface Props {
+        id: string; areaHa: number; meanProbability: number; touchesMappedMine: boolean;
+        ndviThreeYearsEarlier: number; lon: number; lat: number;
+        pixelBBox: [number, number, number, number]; ringsPx: number[][][];
+        reviewId: string | null; review: Review | null;
+      }
+      interface Candidate { type: 'Feature'; properties: Props; geometry: Geometry }
+      interface Meta {
+        runId: string; region: string; year: number; beforeYear: number; sizePx: [number, number];
+        pixelM: number; bounds: [number, number, number, number]; cornersLonLat: [number, number][];
+      }
+      interface Run { region: string; year: number; candidates: number; reviewed: number }
+      interface Job { id: string; region: string; year: number; status: string; log: string[] }
+
+      const API = '/__review/api';
+      const COLORS: Record<string, string> = { unreviewed: '#ffd23f', confirm: '#ff3b30', reject: '#9a9a9a', unsure: '#4fc3f7' };
+      const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+      const state = {
+        meta: null as Meta | null,
+        all: [] as Candidate[],
+        shown: [] as Candidate[],
+        index: 0,
+        filter: 'unreviewed',
+        hideMapped: true,
+        before: null as HTMLImageElement | null,
+        after: null as HTMLImageElement | null,
+      };
+
+      async function api<T>(url: string, init?: RequestInit): Promise<T> {
+        const res = await fetch(`${API}${url}`, init);
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? res.statusText);
+        return body as T;
+      }
+
+      const status = (c: Candidate) => c.properties.review?.decision ?? 'unreviewed';
+      const loadImage = (src: string) =>
+        new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error(`could not load ${src}`));
+          img.src = src;
+        });
+
+      // ---------- map ----------
+      const map = new MapLibreMap({
+        container: 'map',
+        style: 'https://tiles.openfreemap.org/styles/positron',
+        center: [121, 16.5],
+        zoom: 7,
+        attributionControl: { compact: true },
+      });
+      map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+      const mapReady = new Promise<void>((resolve) => map.on('load', () => resolve()));
+
+      async function showOnMap(meta: Meta, candidates: Candidate[]) {
+        await mapReady;
+        const imageUrl = `${API}/image/${meta.region}/${meta.year}/after.webp?run=${meta.runId}`;
+        if (map.getLayer('img')) map.removeLayer('img');
+        if (map.getSource('img')) map.removeSource('img');
+        map.addSource('img', { type: 'image', url: imageUrl, coordinates: meta.cornersLonLat as any });
+        map.addLayer({ id: 'img', type: 'raster', source: 'img', paint: { 'raster-opacity': 0.95 } });
+        const data = collection(candidates);
+        const src = map.getSource('cands') as GeoJSONSource | undefined;
+        if (src) src.setData(data);
+        else {
+          map.addSource('cands', { type: 'geojson', data, promoteId: 'id' });
+          map.addLayer({
+            id: 'cands-fill', type: 'fill', source: 'cands',
+            paint: { 'fill-color': ['get', 'color'], 'fill-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 0.55, 0.3] },
+          });
+          map.addLayer({
+            id: 'cands-line', type: 'line', source: 'cands',
+            paint: { 'line-color': ['get', 'color'], 'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1.5] },
+          });
+          map.on('click', 'cands-fill', (e: MapLayerMouseEvent) => {
+            const id = e.features?.[0]?.properties?.id;
+            const i = state.shown.findIndex((c) => c.properties.id === id);
+            if (i >= 0) select(i);
+            else new Popup().setLngLat(e.lngLat).setText(`${id} is hidden by the current filter`).addTo(map);
+          });
+          map.on('mouseenter', 'cands-fill', () => (map.getCanvas().style.cursor = 'pointer'));
+          map.on('mouseleave', 'cands-fill', () => (map.getCanvas().style.cursor = ''));
+        }
+        map.moveLayer('cands-fill');
+        map.moveLayer('cands-line');
+        const [w, s, e, n] = meta.bounds;
+        map.fitBounds([[w, s], [e, n]], { padding: 20, duration: 0 });
+      }
+
+      function collection(candidates: Candidate[]): FeatureCollection {
+        return {
+          type: 'FeatureCollection',
+          features: candidates.map((c) => ({
+            type: 'Feature', geometry: c.geometry,
+            properties: { id: c.properties.id, color: COLORS[status(c)] },
+          })),
+        };
+      }
+
+      let selectedOnMap: string | null = null;
+      function highlight(c: Candidate) {
+        if (!map.getSource('cands')) return;
+        if (selectedOnMap) map.setFeatureState({ source: 'cands', id: selectedOnMap }, { selected: false });
+        map.setFeatureState({ source: 'cands', id: c.properties.id }, { selected: true });
+        selectedOnMap = c.properties.id;
+        const pad = 0.004;
+        map.fitBounds([[c.properties.lon - pad, c.properties.lat - pad], [c.properties.lon + pad, c.properties.lat + pad]],
+                      { maxZoom: 15, duration: 400 });
+      }
+
+      // ---------- list ----------
+      function applyFilter(keepId?: string) {
+        state.shown = state.all.filter((c) =>
+          (!state.hideMapped || !c.properties.touchesMappedMine) &&
+          (state.filter === 'all' || status(c) === state.filter));
+        const counts = { unreviewed: 0, confirm: 0, reject: 0, unsure: 0 } as Record<string, number>;
+        for (const c of state.all) if (!state.hideMapped || !c.properties.touchesMappedMine) counts[status(c)]++;
+        $('counts').textContent =
+          `${state.shown.length} shown · ${counts.unreviewed} unreviewed, ${counts.confirm} confirmed, ` +
+          `${counts.reject} rejected, ${counts.unsure} unsure`;
+        const list = $('list');
+        list.replaceChildren(...state.shown.map((c, i) => {
+          const li = document.createElement('li');
+          const b = document.createElement('button');
+          b.className = 'item';
+          b.innerHTML = `<i style="background:${COLORS[status(c)]}"></i><span class="mono">${c.properties.id.split('-').at(-1)}</span>` +
+            `<span>${c.properties.areaHa} ha</span><span class="muted">p ${c.properties.meanProbability}</span>`;
+          b.addEventListener('click', () => select(i));
+          li.append(b);
+          return li;
+        }));
+        const keep = keepId ? state.shown.findIndex((c) => c.properties.id === keepId) : -1;
+        select(keep >= 0 ? keep : Math.min(state.index, Math.max(0, state.shown.length - 1)), keep < 0);
+      }
+
+      // ---------- viewer ----------
+      function drawCrop(canvas: HTMLCanvasElement, img: HTMLImageElement | null, c: Candidate) {
+        const ctx = canvas.getContext('2d')!;
+        ctx.fillStyle = '#222';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (!img) return;
+        const [c0, r0, c1, r1] = c.properties.pixelBBox;
+        const size = Math.max(c1 - c0, r1 - r0);
+        const side = Math.max(40, size * 2.2); // at least 800 m of context at 20 m pixels
+        const sx = (c0 + c1) / 2 - side / 2;
+        const sy = (r0 + r1) / 2 - side / 2;
+        const k = canvas.width / side;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, canvas.width, canvas.height);
+        if ((document.getElementById('show-outline') as HTMLInputElement).checked) {
+          ctx.strokeStyle = '#00ffff';
+          ctx.lineWidth = 2;
+          for (const ring of c.properties.ringsPx) {
+            ctx.beginPath();
+            ring.forEach(([x, y], j) => (j ? ctx.lineTo((x - sx) * k, (y - sy) * k) : ctx.moveTo((x - sx) * k, (y - sy) * k)));
+            ctx.stroke();
+          }
+        }
+        // 200 m scale bar
+        const bar = (200 / state.meta!.pixelM) * k;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(8, canvas.height - 26, bar + 16, 18);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(16, canvas.height - 14, bar, 4);
+        ctx.font = '11px ui-monospace, monospace';
+        ctx.fillText('200 m', 16, canvas.height - 16);
+      }
+
+      function select(i: number, fly = true) {
+        state.index = i;
+        const c = state.shown[i];
+        for (const [j, li] of [...$('list').children].entries()) li.classList.toggle('selected', j === i);
+        $('list').children[i]?.scrollIntoView({ block: 'nearest' });
+        if (!c) {
+          $('cand-title').textContent = 'Nothing to review with this filter';
+          $('cand-status').textContent = '';
+          $('facts').replaceChildren();
+          $('links').replaceChildren();
+          for (const id of ['before-canvas', 'after-canvas']) {
+            const cv = $<HTMLCanvasElement>(id);
+            cv.getContext('2d')!.clearRect(0, 0, cv.width, cv.height);
+          }
+          return;
+        }
+        const p = c.properties;
+        $('cand-title').textContent = p.id;
+        const st = status(c);
+        $('cand-status').textContent = st + (p.review?.reason ? ` · ${p.review.reason}` : '');
+        $('cand-status').style.background = COLORS[st];
+        drawCrop($<HTMLCanvasElement>('before-canvas'), state.before, c);
+        drawCrop($<HTMLCanvasElement>('after-canvas'), state.after, c);
+        const facts: [string, string][] = [
+          ['Area', `${p.areaHa} ha`],
+          ['Model probability', String(p.meanProbability)],
+          [`NDVI in ${state.meta!.beforeYear}`, `${p.ndviThreeYearsEarlier} ${p.ndviThreeYearsEarlier > 0.5 ? '(was green)' : '(already open)'}`],
+          ['Touches mapped mine', p.touchesMappedMine ? 'yes' : 'no'],
+          ['Location', `${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}`],
+        ];
+        $('facts').replaceChildren(...facts.flatMap(([k, v]) => {
+          const dt = document.createElement('dt'); dt.className = 'label'; dt.textContent = k;
+          const dd = document.createElement('dd'); dd.textContent = v;
+          return [dt, dd];
+        }));
+        const links: [string, string][] = [
+          ['Google Maps satellite', `https://www.google.com/maps/@${p.lat},${p.lon},17z/data=!3m1!1e3`],
+          ['Esri World Imagery', `https://www.arcgis.com/apps/mapviewer/index.html?center=${p.lon},${p.lat}&level=17&basemapUrl=https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer`],
+          ['OpenStreetMap', `https://www.openstreetmap.org/#map=17/${p.lat}/${p.lon}`],
+        ];
+        $('links').replaceChildren('Sharper imagery to check against: ', ...links.flatMap(([label, href], j) => {
+          const a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener'; a.textContent = label;
+          return j ? [' · ', a] : [a];
+        }));
+        $<HTMLSelectElement>('reason').value = p.review?.reason ?? 'riverbed';
+        $<HTMLTextAreaElement>('note').value = p.review?.note ?? '';
+        if (fly) highlight(c);
+      }
+
+      async function decide(decision: Decision | null) {
+        const c = state.shown[state.index];
+        if (!c || !state.meta) return;
+        const saveStatus = $('save-status');
+        try {
+          const { review } = await api<{ review: Review | null }>('/review', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              region: state.meta.region, year: state.meta.year, candidateId: c.properties.id, decision,
+              reason: decision === 'reject' ? $<HTMLSelectElement>('reason').value : null,
+              note: $<HTMLTextAreaElement>('note').value,
+            }),
+          });
+          c.properties.review = review;
+          c.properties.reviewId = review?.reviewId ?? null;
+          saveStatus.textContent = decision ? `Saved: ${decision}` : 'Cleared';
+          (map.getSource('cands') as GeoJSONSource | undefined)?.setData(collection(state.all));
+          const nextId = decision && state.filter === 'unreviewed'
+            ? state.shown[state.index + 1]?.properties.id
+            : c.properties.id;
+          applyFilter(nextId);
+          refreshRuns();
+        } catch (err) {
+          saveStatus.textContent = `Not saved: ${(err as Error).message}`;
+        }
+      }
+
+      // ---------- runs & jobs ----------
+      async function refreshRuns(selectKey?: string) {
+        const s = await api<{ regions: { name: string; split: string }[]; runs: Run[]; modelTrained: boolean; job: Job | null }>('/state');
+        const runSelect = $<HTMLSelectElement>('run-select');
+        const current = selectKey ?? runSelect.value;
+        runSelect.replaceChildren(...s.runs.map((r) => {
+          const o = document.createElement('option');
+          o.value = `${r.region}/${r.year}`;
+          o.textContent = `${r.region} ${r.year} — ${r.reviewed}/${r.candidates} reviewed`;
+          return o;
+        }));
+        if (current && s.runs.some((r) => `${r.region}/${r.year}` === current)) runSelect.value = current;
+        const regionSelect = $<HTMLSelectElement>('region-select');
+        if (!regionSelect.options.length) {
+          for (const split of ['test', 'train']) {
+            const g = document.createElement('optgroup');
+            g.label = split === 'test' ? 'Northern Luzon (held out)' : 'Training regions';
+            for (const r of s.regions.filter((x) => x.split === split)) {
+              const o = document.createElement('option'); o.value = r.name; o.textContent = r.name; g.append(o);
+            }
+            regionSelect.append(g);
+          }
+        }
+        $<HTMLButtonElement>('run-button').disabled = !s.modelTrained || !!s.job;
+        if (!s.modelTrained) $('job-status').textContent = 'No trained model yet: run `uv run python -m bantay.ml train`.';
+        if (s.job && !pollTimer) poll(s.job.id);
+        return s.runs;
+      }
+
+      async function openRun(key: string) {
+        if (!key) return;
+        const [region, year] = key.split('/');
+        const { meta, candidates } = await api<{ meta: Meta; candidates: { features: Candidate[] } }>(`/run/${region}/${year}`);
+        state.meta = meta;
+        state.all = candidates.features;
+        state.index = 0;
+        [state.before, state.after] = await Promise.all([
+          loadImage(`${API}/image/${region}/${year}/before.webp?run=${meta.runId}`).catch(() => null),
+          loadImage(`${API}/image/${region}/${year}/after.webp?run=${meta.runId}`).catch(() => null),
+        ]);
+        $('tag-before').textContent = `before · ${meta.beforeYear}`;
+        $('tag-after').textContent = `after · ${meta.year}`;
+        $('app').hidden = false;
+        $('empty').hidden = true;
+        await showOnMap(meta, state.all);
+        applyFilter();
+        map.resize();
+      }
+
+      let pollTimer: number | null = null;
+      function poll(id: string) {
+        const box = $<HTMLDetailsElement>('log-box');
+        box.open = true;
+        const tick = async () => {
+          const job = await api<Job>(`/jobs/${id}`);
+          $('log').textContent = job.log.join('\n');
+          $('log').scrollTop = $('log').scrollHeight;
+          $('job-status').textContent = `${job.region} ${job.year}: ${job.status}`;
+          if (job.status === 'running') {
+            pollTimer = window.setTimeout(tick, 2000);
+            return;
+          }
+          pollTimer = null;
+          const key = `${job.region}/${job.year}`;
+          await refreshRuns(job.status === 'done' ? key : undefined);
+          if (job.status === 'done') await openRun(key);
+        };
+        tick();
+      }
+
+      $('run-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          const job = await api<Job>('/jobs', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ region: $<HTMLSelectElement>('region-select').value, year: Number($<HTMLInputElement>('year-input').value) }),
+          });
+          $<HTMLButtonElement>('run-button').disabled = true;
+          poll(job.id);
+        } catch (err) {
+          $('job-status').textContent = (err as Error).message;
+        }
+      });
+
+      // ---------- controls ----------
+      const stage = $('stage');
+      const slider = $<HTMLInputElement>('slider');
+      const setPos = () => stage.style.setProperty('--pos', `${slider.value}%`);
+      slider.addEventListener('input', setPos);
+      slider.addEventListener('pointerdown', (e) => {
+        slider.setPointerCapture(e.pointerId);
+        const r = stage.getBoundingClientRect();
+        slider.value = String(((e.clientX - r.left) / r.width) * 100);
+        setPos();
+      });
+      slider.addEventListener('pointermove', (e) => {
+        if (!slider.hasPointerCapture(e.pointerId)) return;
+        const r = stage.getBoundingClientRect();
+        slider.value = String(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
+        setPos();
+      });
+      setPos();
+
+      $('run-select').addEventListener('change', (e) => openRun((e.target as HTMLSelectElement).value));
+      $('show-outline').addEventListener('change', () => select(state.index, false));
+      $('hide-mapped').addEventListener('change', (e) => {
+        state.hideMapped = (e.target as HTMLInputElement).checked;
+        applyFilter(state.shown[state.index]?.properties.id);
+      });
+      for (const b of document.querySelectorAll<HTMLButtonElement>('[data-filter]')) {
+        b.addEventListener('click', () => {
+          state.filter = b.dataset.filter!;
+          for (const o of document.querySelectorAll('[data-filter]')) o.classList.toggle('on', o === b);
+          state.index = 0;
+          applyFilter();
+        });
+      }
+      for (const b of document.querySelectorAll<HTMLButtonElement>('[data-decision]')) {
+        b.addEventListener('click', () => decide(b.dataset.decision === 'clear' ? null : (b.dataset.decision as Decision)));
+      }
+      document.addEventListener('keydown', (e) => {
+        const t = e.target as HTMLElement;
+        if (t.matches('textarea, input[type=number], select') || e.metaKey || e.ctrlKey || e.altKey) return;
+        const key = e.key.toLowerCase();
+        if (key === 'j' || e.key === 'ArrowDown') select(Math.min(state.index + 1, state.shown.length - 1));
+        else if (key === 'k' || e.key === 'ArrowUp') select(Math.max(state.index - 1, 0));
+        else if (key === 'c') decide('confirm');
+        else if (key === 'r') decide('reject');
+        else if (key === 'u') decide('unsure');
+        else if (key === '0') decide(null);
+        else if (key === 'o') {
+          const box = $<HTMLInputElement>('show-outline');
+          box.checked = !box.checked;
+          select(state.index, false);
+        } else return;
+        e.preventDefault();
+      });
+
+      // ---------- start ----------
+      $<HTMLInputElement>('year-input').value = String(new Date().getFullYear());
+      async function start() {
+        const runs = await refreshRuns();
+        if (runs.length) return openRun($<HTMLSelectElement>('run-select').value);
+        $('empty').hidden = false;
+        $('empty').textContent = 'No candidate runs yet. Pick a region and year above and press "Run model".';
+      }
+      start().catch((err) => {
+        $('empty').hidden = false;
+        $('empty').textContent = `Could not load: ${err.message}`;
+      });
+    </script>
+
+    <!-- Global: list rows and facts are created by the script, so they carry no scoped class. -->
+    <style is:global>
+      body {
+        margin: 0;
+        font-size: 15px;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 0.8rem 1.4rem;
+        padding: 0.7rem 1rem;
+        border-bottom: 1px solid var(--line);
+        background: var(--paper);
+      }
+      .brand {
+        display: grid;
+        gap: 0.1rem;
+        margin-right: auto;
+      }
+      .field {
+        display: grid;
+        gap: 0.2rem;
+      }
+      .run-form {
+        grid-template-columns: auto auto auto;
+        align-items: end;
+      }
+      .run-form .label {
+        grid-column: 1 / -1;
+      }
+      select,
+      input[type='number'],
+      textarea,
+      button {
+        font: inherit;
+        font-size: 0.88rem;
+        padding: 0.3rem 0.5rem;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--ink);
+      }
+      input[type='number'] {
+        width: 5.5rem;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .small {
+        font-size: 0.8rem;
+      }
+      .log {
+        margin: 0;
+        padding: 0 1rem;
+        border-bottom: 1px solid var(--line);
+      }
+      .log summary {
+        padding: 0.4rem 0;
+        cursor: pointer;
+      }
+      .log pre {
+        max-height: 14rem;
+        overflow: auto;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        background: #1d1a16;
+        color: #e8e2d6;
+        padding: 0.6rem;
+        border-radius: 6px;
+      }
+      .empty {
+        padding: 2rem 1rem;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 17rem minmax(0, 32rem) minmax(0, 1fr);
+        gap: 1rem;
+        padding: 1rem;
+        align-items: start;
+      }
+      .list {
+        display: grid;
+        gap: 0.5rem;
+        max-height: calc(100vh - 7rem);
+        overflow: hidden;
+        grid-template-rows: auto auto auto 1fr;
+      }
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+      }
+      .filters button {
+        padding: 0.15rem 0.5rem;
+        font-size: 0.78rem;
+      }
+      .filters .on {
+        background: var(--ink);
+        color: var(--paper);
+        border-color: var(--ink);
+      }
+      #list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        overflow: auto;
+        border-top: 1px solid var(--line);
+      }
+      .item {
+        display: grid;
+        grid-template-columns: 0.7rem 3.2rem 1fr auto;
+        gap: 0.5rem;
+        align-items: center;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        border-radius: 0;
+        background: transparent;
+      }
+      .item i,
+      .legend i {
+        display: inline-block;
+        width: 0.65rem;
+        height: 0.65rem;
+        border-radius: 2px;
+      }
+      #list li.selected .item {
+        background: #f1e2c9;
+      }
+      .viewer {
+        display: grid;
+        gap: 0.6rem;
+      }
+      .viewer-head {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+      .viewer-head h1 {
+        font-size: 1rem;
+      }
+      .pill {
+        font-size: 0.72rem;
+        font-family: var(--mono);
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        color: #1d1a16;
+      }
+      .stage {
+        --pos: 50%;
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: var(--radius);
+        overflow: hidden;
+        background: #222;
+        touch-action: pan-y;
+        user-select: none;
+      }
+      .stage canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        image-rendering: pixelated;
+      }
+      #before-canvas {
+        clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+      }
+      .handle {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: var(--pos);
+        width: 2px;
+        margin-left: -1px;
+        background: #fff;
+        pointer-events: none;
+      }
+      .range {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        opacity: 0;
+        cursor: ew-resize;
+      }
+      .tag {
+        position: absolute;
+        top: 8px;
+        font-size: 0.72rem;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        pointer-events: none;
+      }
+      .tag.left {
+        left: 8px;
+      }
+      .tag.right {
+        right: 8px;
+      }
+      .facts {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.2rem 0.8rem;
+        margin: 0;
+        font-size: 0.88rem;
+      }
+      .facts dd {
+        margin: 0;
+      }
+      .decide {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+      .decide .confirm {
+        border-color: #ff3b30;
+      }
+      .decide .reject {
+        border-color: #6b6b6b;
+      }
+      .decide .ghost {
+        background: transparent;
+      }
+      kbd {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 0 0.25rem;
+        background: var(--bg);
+      }
+      .mapcol {
+        display: grid;
+        gap: 0.5rem;
+        position: sticky;
+        top: 1rem;
+      }
+      .map {
+        height: calc(100vh - 12rem);
+        min-height: 380px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem 1rem;
+        margin: 0;
+      }
+      @media (max-width: 1100px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .list {
+          max-height: 20rem;
+        }
+      }
+    </style>
+  </body>
+</html>
