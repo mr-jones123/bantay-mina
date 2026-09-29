@@ -89,6 +89,45 @@ the base automatically.
 
 The full explanation is on the site's Methods page.
 
+## Mining classifier (candidate finder)
+
+A LightGBM model that looks at *open ground* (not dense green, not water) and scores how much it looks
+like mine ground. It produces a review list, never a published finding.
+
+```sh
+uv run python -m bantay.ml features            # cache 20 m feature stacks per region (~15 min, parallelisable)
+uv run python -m bantay.ml train               # leave-one-region-out CV, final model, pipeline/ML_REPORT.md
+uv run python -m bantay.ml predict --year 2026 # candidates for the Northern Luzon regions
+```
+
+- **Regions** are defined in `pipeline/ml_regions.yaml`. The model trains on 10 regions outside Northern
+  Luzon (Mindanao and Dinagat nickel, Cebu, Palawan, Masbate, Semirara, Marinduque, Negros, southern
+  Zambales). It is scored once on 5 Northern Luzon regions it never saw during training.
+- **Labels:** open ground inside Tang & Werner mine polygons counts as mining. Open ground more than 300 m
+  from any mapped mine is a look-alike, labelled with its ESA WorldCover class (cropland, built-up,
+  bare/sparse, grass/shrub, other).
+- **Features** (`bantay/ml/features.py`), all measured in the dry season:
+  - Sentinel-2 bands including the shortwave-infrared B11 and B12
+  - iron-oxide, clay and bare-soil indices
+  - the same measures three years earlier, and the change since
+  - share of bare ground within 220 m and 500 m, and local texture
+  - Sentinel-1 radar backscatter
+  - slope, and terrain position relative to the surrounding 500 m
+  - JRC surface-water occurrence since 1984
+  - Hansen tree cover in 2000, and years since tree loss
+  - Absolute elevation is left out on purpose: the first model used it as a shortcut.
+- **Scores** are in `pipeline/ML_REPORT.md`. On Northern Luzon, average precision is 0.85. At the review
+  threshold, it finds about 93% of mapped mine ground, but only about 55% of what it flags is mine ground.
+  So the list needs a person to check it.
+- **Known false alarms:**
+  - riverbeds and sediment in narrow mountain valleys
+  - dry-season farm plots on slopes
+  - dense built-up areas (Baguio)
+  - beaches
+- **Candidates** are written to `pipeline/data/ml/candidates/<region>-<year>/`. Each run produces
+  `candidates.geojson`, `candidates.csv` and a `review.png` contact sheet. They are not committed and not
+  on the website. Each candidate starts as `review: unreviewed`.
+
 ## Not done yet
 
 - MGB mining tenement (permit) boundaries. Needed before the site can say whether any clearing happened
@@ -97,4 +136,5 @@ The full explanation is on the site's Methods page.
   Dupax (Woggle) box is placed from the company's own published target map.
 - The 99 ha cluster near Tuba, Benguet (120.566, 16.168) looks like a limestone quarry and cement
   plant; not verified and not included.
-- The ML phase: first detecting new bare land, then classifying which of it is mining.
+- Reviewing the candidate lists. Confirmed and rejected candidates should become new labels, especially
+  the rejected ones, so the next model learns those look-alikes.

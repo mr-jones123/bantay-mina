@@ -1,6 +1,7 @@
 # pipeline
 pipeline/.venv/
-pipeline/data/raw/
+# raw downloads, ML feature caches, models, unreviewed candidates
+pipeline/data/
 __pycache__/
 
 # site

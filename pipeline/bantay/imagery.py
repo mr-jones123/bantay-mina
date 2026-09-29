@@ -117,13 +117,15 @@ def _darker_quartile_index(blue: np.ndarray, valid: np.ndarray, counts: np.ndarr
     return np.take_along_axis(order, rank[None], axis=0)[0]
 
 
-def composite(sensor: str, grid: SiteGrid, items: list) -> Composite:
+def quality_mosaic(sensor: str, grid: SiteGrid, items: list, bands: list[str],
+                   blue: str) -> tuple[dict[str, np.ndarray], np.ndarray]:
+    """Cloud-masked darker-quartile mosaic of `bands`; returns (band -> (H, W) reflectance, clear counts)."""
     if not items:
         raise RuntimeError(f"no {sensor} scenes matched; widen years/months or max_scene_cloud")
     spec = SENSORS[sensor]
     ds = load(
         items,
-        bands=[*spec["bands"], spec["mask_band"]],
+        bands=[*bands, spec["mask_band"]],
         geobox=grid.geobox,
         groupby="solar_day",
         resampling={"*": "bilinear", spec["mask_band"]: "nearest"},
@@ -133,28 +135,35 @@ def composite(sensor: str, grid: SiteGrid, items: list) -> Composite:
     items_by_day = {i.datetime.date().isoformat(): i for i in items}
     days = ds.time.values
     clear = _clear_mask(sensor, ds[spec["mask_band"]].values)
-    bands = []
-    for name in spec["bands"]:
+    layers = []
+    for name in bands:
         dn = ds[name].values
         refl = _reflectance(sensor, dn, items_by_day, days)
         refl[~clear | (dn == 0)] = np.nan
-        bands.append(refl)
-    stack = np.stack(bands, axis=1)  # (time, band, H, W): red, green, blue, nir
+        layers.append(refl)
+    del ds
+    stack = np.stack(layers, axis=1)  # (time, band, H, W)
+    del layers
     valid = np.isfinite(stack).all(axis=1)
     counts = valid.sum(axis=0)
-    pick = _darker_quartile_index(stack[:, 2], valid, counts)
+    pick = _darker_quartile_index(stack[:, bands.index(blue)], valid, counts)
     chosen = np.take_along_axis(stack, pick[None, None], axis=0)[0]  # (band, H, W)
     chosen[:, counts == 0] = np.nan
-    red, green, nir = chosen[0], chosen[1], chosen[3]
+    return {name: chosen[i].astype(np.float32) for i, name in enumerate(bands)}, counts
+
+
+def composite(sensor: str, grid: SiteGrid, items: list) -> Composite:
+    red_b, green_b, blue_b, nir_b = SENSORS[sensor]["bands"]
+    mosaic, counts = quality_mosaic(sensor, grid, items, SENSORS[sensor]["bands"], blue=blue_b)
+    red, green, blue, nir = mosaic[red_b], mosaic[green_b], mosaic[blue_b], mosaic[nir_b]
     with np.errstate(invalid="ignore", divide="ignore"):
         ndvi = ((nir - red) / (nir + red)).astype(np.float32)
         ndwi = ((green - nir) / (green + nir)).astype(np.float32)
-    rgb = chosen[:3].astype(np.float32)
     return Composite(
-        rgb=rgb,
+        rgb=np.stack([red, green, blue]),
         ndvi=ndvi,
         ndwi=ndwi,
-        nir=nir.astype(np.float32),
+        nir=nir,
         sensor=sensor,
         platforms=sorted({i.properties["platform"] for i in items}),
         scene_ids=[i.id for i in items],

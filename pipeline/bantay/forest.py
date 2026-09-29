@@ -113,14 +113,19 @@ def forest_loss(grid: SiteGrid, footprint_lonlat: BaseGeometry | None, cache: Pa
     return stats, on_grid
 
 
+def layer_on_grid(layer: str, grid: SiteGrid, cache: Path) -> np.ndarray:
+    """One Hansen layer (e.g. lossyear, treecover2000, datamask) resampled onto the site grid."""
+    data, transform, crs = _read(layer, grid.footprint_lonlat().bounds, cache)
+    on_grid = np.zeros((grid.height, grid.width), dtype=data.dtype)
+    reproject(data, on_grid, src_transform=transform, src_crs=crs,
+              dst_transform=grid.geobox.transform, dst_crs=grid.crs.to_wkt(),
+              resampling=Resampling.nearest)
+    return on_grid
+
+
 def land_mask(grid: SiteGrid, cache: Path) -> np.ndarray:
     """True where Hansen's datamask marks land (1), i.e. not permanent water (2) or no data (0).
 
     The datamask reflects the 2000s, so ponds dug since then (tailings, pits) still count as land.
     """
-    mask, transform, crs = _read("datamask", grid.footprint_lonlat().bounds, cache)
-    on_grid = np.zeros((grid.height, grid.width), dtype=np.uint8)
-    reproject(mask, on_grid, src_transform=transform, src_crs=crs,
-              dst_transform=grid.geobox.transform, dst_crs=grid.crs.to_wkt(),
-              resampling=Resampling.nearest)
-    return on_grid == 1
+    return layer_on_grid("datamask", grid, cache) == 1
