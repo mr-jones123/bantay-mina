@@ -6,6 +6,8 @@ cover and shoreline change measured at each one. *Bantay* means "watch" or "guar
 The site shows what happened to the land, using images anyone can check. It is a static website. Every
 image and number comes from one reproducible pipeline, and every data source is free and public.
 
+Live: **https://bantay-mina.xy-800.workers.dev**
+
 ## Sites
 
 Seventeen sites: 10 in Luzon, 2 in the Visayas and 5 in Mindanao. "Green → bare" is the area that went
@@ -112,9 +114,20 @@ npm run dev        # http://localhost:4321
 npm run build      # static output in site/dist/
 ```
 
-`site/dist/` can be hosted on any static host (Cloudflare Pages, GitHub Pages, Netlify). For a GitHub
-Pages project path, set `base` in `site/astro.config.mjs`. All links go through `asset()`, so they pick up
-the base automatically.
+## Deploy
+
+The site is served by Cloudflare Workers as static assets (`site/wrangler.jsonc`, no Worker script yet).
+Cloudflare recommends Workers over Pages for new projects, and an API can be added to the same Worker
+later.
+
+```sh
+cd site
+npx wrangler login   # once
+npm run deploy       # astro build && wrangler deploy
+```
+
+`/review` and the model candidates are never deployed: `npm run build` leaves them out. If the site
+moves to its own domain, update `site` in `site/astro.config.mjs` so share images get the right URL.
 
 ## Add a site
 
@@ -188,6 +201,11 @@ uv run python -m bantay.ml predict --year 2026 # candidates for the Northern Luz
   Zamboanga.
 - The 99 ha cluster near Tuba, Benguet (120.566, 16.168) looks like a limestone quarry and cement
   plant; not verified and not included.
+
+## Licence
+
+The code and site content are released under the [MIT License](LICENSE). The satellite imagery and
+datasets keep their own licences and attribution requirements (see [Data sources](#data-sources)).
 
 ## Corrections and contact
 

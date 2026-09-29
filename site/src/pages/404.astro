@@ -1,0 +1,32 @@
+---
+import Base from '../layouts/Base.astro';
+import { asset } from '../lib/paths';
+---
+
+<Base title="Page not found" description="This page does not exist on Bantay Mina.">
+  <div class="wrap">
+    <header class="head">
+      <p class="label">404</p>
+      <h1>Page not found</h1>
+      <p class="lede">
+        This address doesn't match any page. The <a href={asset('/')}>list of sites</a> and the
+        {' '}<a href={asset('/methods/')}>methods</a> are the places to start.
+      </p>
+    </header>
+  </div>
+</Base>
+
+<style>
+  .head {
+    padding: 2.4rem 0 3rem;
+    max-width: 44rem;
+  }
+  .head .label {
+    margin-bottom: 0.7rem;
+  }
+  .lede {
+    font-size: 1.08rem;
+    margin-top: 0.9rem;
+    color: var(--muted);
+  }
+</style>

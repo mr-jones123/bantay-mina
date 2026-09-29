@@ -1,0 +1,12 @@
+// Cloudflare Workers deployment: the built static site served as Workers static assets.
+// No Worker script yet; an API (e.g. for model results) can be added later with a `main` entry.
+// https://developers.cloudflare.com/workers/static-assets/
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bantay-mina",
+  "compatibility_date": "2026-09-30",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  }
+}
