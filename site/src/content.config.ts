@@ -87,6 +87,26 @@ const analysis = defineCollection({
       footprint: lossStats.nullable(),
       overlay: z.string(),
     }),
+    // Protected areas whose legal boundary reaches the box (pipeline/protected_areas.yaml).
+    protectedAreas: z
+      .array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          short: z.string(),
+          law: z.string(),
+          url: z.url(),
+          bufferKm: z.number(),
+          areaSvgPath: z.string(),
+          boundarySvgPath: z.string(),
+          bufferSvgPath: z.string(),
+          footprintDistanceKm: z.number().nullable(),
+          footprintInsideHa: z.number().nullable(),
+          footprintInBufferHa: z.number().nullable(),
+          change: z.record(z.string(), z.object({ insideHa: z.number(), bufferHa: z.number() })),
+        }),
+      )
+      .default([]),
   }),
 });
 
@@ -115,6 +135,8 @@ const sites = defineCollection({
       province: z.string(),
       region: z.string(),
       islandGroup: z.enum(['Luzon', 'Visayas', 'Mindanao']),
+      // Sites in a mountain range with its own overview page (src/pages/sierra-madre.astro).
+      mountainRange: z.enum(['Sierra Madre']).optional(),
       operator: z.string(),
       commodities: z.array(z.string()).min(1),
       stage: z.enum(['exploration', 'development', 'operating', 'suspended', 'closed']),

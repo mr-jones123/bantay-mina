@@ -1,0 +1,153 @@
+# Protected areas whose boundary is written into the law as coordinates. `bantay` draws them on
+# the site maps and sliders, and measures mine footprints and clearing against them.
+#
+# Coordinates are copied exactly as printed. Where the printed text is plainly a typo, the fix
+# is listed under `corrections` with the reason. Each rebuilt boundary is checked against the
+# area the law states, and against the government's own polygon where one is published.
+
+nsmnp:
+  name: Northern Sierra Madre Natural Park
+  short: NSMNP
+  law: RA 9125
+  url: https://lawphil.net/statutes/repacts/ra2001/ra_9125_2001.html
+  # Section 5: "Buffer zones of not more than one (1) kilometer wide from the boundaries of the
+  # NSMNP, except those bordering the Province of Cagayan, are hereby established." Section 21(h)
+  # prohibits mineral exploration, extraction and quarrying "within the NSMNP or its buffer zones".
+  buffer_km: 1
+  # Section 4: 287,861 ha of land plus 71,625 ha of coastline water = 359,486 ha.
+  stated_area_ha: 359486
+  # The printed coordinates are on the Luzon 1911 datum (EPSG:4253), not WGS84: read that way, the
+  # rebuilt boundary matches the Biodiversity Management Bureau's polygon (Geoportal Philippines
+  # layer geoportal:bmb_protectedareas, "Northern Sierra Madre Natural Park", 356,969 ha, legal
+  # basis "Republic Act 9125 s. 2001 / Proc. 978 s. 1997") to within 36 m. Read as WGS84 it is off
+  # by up to 240 m. The same two corrections below are in the BMB polygon. Proclamation No. 978
+  # (1997), which RA 9125 replaced, prints the same two typos.
+  datum: 4253
+  corrections:
+    15:
+      longitude: "121-59-31"
+      reason: >-
+        Printed as 122-59'31", about 105 km east of points 14 and 16 (122-02'21" and 121-59'21"),
+        which makes the boundary cross itself. 121-59'31" continues the line between them.
+    41:
+      latitude: "16-51-28"
+      reason: >-
+        Printed as 16-21'28", about 55 km south of points 40 and 42 (16-52'49" and 16-49'05").
+        16-51'28" lies between them.
+  corners:
+    # point: [longitude, latitude] as printed in Section 4 (degrees-minutes-seconds)
+    - [1, "122-11-23", "17-32-23"]
+    - [2, "122-11-15", "17-31-16"]
+    - [3, "122-10-14", "17-29-43"]
+    - [4, "122-10-35", "17-28-26"]
+    - [5, "122-11-22", "17-28-44"]
+    - [6, "122-12-19", "17-28-02"]
+    - [7, "122-12-27", "17-25-51"]
+    - [8, "122-11-37", "17-26-21"]
+    - [9, "122-10-18", "17-26-57"]
+    - [10, "122-09-21", "17-28-38"]
+    - [11, "122-08-58", "17-30-32"]
+    - [12, "122-07-47", "17-32-01"]
+    - [13, "122-05-10", "17-32-21"]
+    - [14, "122-02-21", "17-32-21"]
+    - [15, "122-59-31", "17-32-20"]
+    - [16, "121-59-21", "17-30-31"]
+    - [17, "121-59-39", "17-28-41"]
+    - [18, "122-00-45", "17-26-47"]
+    - [19, "122-00-19", "17-24-28"]
+    - [20, "121-59-55", "17-22-27"]
+    - [21, "122-00-08", "17-20-26"]
+    - [22, "122-00-58", "17-19-01"]
+    - [23, "122-03-16", "17-18-13"]
+    - [24, "122-02-24", "17-16-25"]
+    - [25, "122-02-44", "17-14-15"]
+    - [26, "122-03-06", "17-12-39"]
+    - [27, "122-03-12", "17-10-52"]
+    - [28, "122-04-55", "17-09-33"]
+    - [29, "122-06-56", "17-10-21"]
+    - [30, "122-07-17", "17-08-19"]
+    - [31, "122-07-43", "17-06-05"]
+    - [32, "122-09-04", "17-04-46"]
+    - [33, "122-09-21", "17-02-40"]
+    - [34, "122-09-19", "17-00-39"]
+    - [35, "122-09-19", "16-59-27"]
+    - [36, "122-10-39", "16-59-18"]
+    - [37, "122-12-11", "16-58-25"]
+    - [38, "122-12-06", "16-56-09"]
+    - [39, "122-12-37", "16-54-20"]
+    - [40, "122-11-10", "16-52-49"]
+    - [41, "122-11-40", "16-21-28"]
+    - [42, "122-12-52", "16-49-05"]
+    - [43, "122-11-21", "16-48-16"]
+    - [44, "122-10-53", "16-46-29"]
+    - [45, "122-10-47", "16-44-17"]
+    - [46, "122-11-55", "16-42-19"]
+    - [47, "122-12-34", "16-40-26"]
+    - [48, "122-12-44", "16-37-56"]
+    - [49, "122-14-41", "16-38-37"]
+    - [50, "122-16-19", "16-39-36"]
+    - [51, "122-17-26", "16-38-50"]
+    - [52, "122-19-42", "16-38-54"]
+    - [53, "122-21-09", "16-39-21"]
+    - [54, "122-23-58", "16-39-21"]
+    - [55, "122-25-18", "16-41-27"]
+    - [56, "122-26-45", "16-43-40"]
+    - [57, "122-28-03", "16-45-53"]
+    - [58, "122-28-51", "16-48-21"]
+    - [59, "122-29-49", "16-50-46"]
+    - [60, "122-30-20", "16-53-18"]
+    - [61, "122-31-11", "16-55-45"]
+    - [62, "122-30-59", "16-58-24"]
+    - [63, "122-32-40", "16-59-59"]
+    - [64, "122-33-47", "17-02-21"]
+    - [65, "122-34-16", "17-04-44"]
+    - [66, "122-33-59", "17-07-10"]
+    - [67, "122-32-58", "17-09-29"]
+    - [68, "122-30-55", "17-10-58"]
+    - [69, "122-28-24", "17-10-03"]
+    - [70, "122-28-11", "17-11-60"]
+    - [71, "122-29-13", "17-14-23"]
+    - [72, "122-28-60", "17-17-03"]
+    - [73, "122-27-55", "17-19-24"]
+    - [74, "122-26-33", "17-21-28"]
+    - [75, "122-24-29", "17-23-15"]
+    - [76, "122-21-57", "17-24-14"]
+    - [77, "122-19-33", "17-23-01"]
+    - [78, "122-17-39", "17-24-36"]
+    - [79, "122-16-22", "17-26-51"]
+    - [80, "122-14-57", "17-29-06"]
+    - [81, "122-14-35", "17-31-44"]
+
+# ---- Areas whose law gives no coordinates: BMB polygons (cached in protected_areas/) ----
+# Fetched from the Biodiversity Management Bureau's NIPAS layer on Geoportal Philippines (see
+# bantay/protected.py). Left out on purpose: Proclamation 1636 (1977) national park and wildlife
+# sanctuary in Rizal, whose BMB polygon (115,448 ha) does not match the 46,310 ha the proclamation
+# states; and the Angat Watershed Reservation of Proclamation 71 (1927), which BMB marks
+# "For Verification" (54,574 ha against 62,309 ha in the proclamation); and Biak-na-Bato National
+# Park, whose BMB polygon (2,112 ha) follows the 1937 Proclamation 223 extent although Proclamation
+# 401 (1989) redefined the park as 658.85 ha, and whose BMB records conflict (2,117 ha "for
+# disestablishment" in TB 2013-01; 3,030.56 ha in PAIS).
+
+pamitinan:
+  name: Pamitinan Protected Landscape
+  short: Pamitinan PL
+  law: Proc. 901 (1996); RA 11038
+  url: https://lawphil.net/executive/proc/proc1996/proc_901_1996.html
+  stated_area_ha: 609.15 # RA 11038
+  bmb: { paname: Pamitinan Protected Landscape, point: [121.19, 14.74] }
+
+umrbpl:
+  name: Upper Marikina River Basin Protected Landscape
+  short: Upper Marikina PL
+  law: Proc. 296 (2011); RA 11038
+  url: https://lawphil.net/executive/proc/proc2011/proc_296_2011.html
+  stated_area_ha: 26125.64 # Proc. 296 and RA 11038
+  bmb: { paname: Upper Marikina River Basin Protected Landscape, point: [121.25, 14.70] }
+
+angat-pilot:
+  name: Angat Watershed and Forest Range (pilot reserve)
+  short: Angat pilot reserve
+  law: Proc. 391 (1968)
+  url: https://lawphil.net/executive/proc/proc1968/proc_391_1968.html
+  stated_area_ha: 6600 # Proc. 391; BMB gives 6,671.6 ha
+  bmb: { paname: Angat Watershed and Forest Range (Pilot), point: [121.18, 14.85] }

@@ -24,7 +24,8 @@ COLOUR = (255, 64, 214)  # magenta, distinct from the yellow–red Hansen ramp
 
 
 def vegetation_to_bare(before_ndvi: np.ndarray, after_ndvi: np.ndarray, land: np.ndarray,
-                       grid: SiteGrid, footprint_utm: BaseGeometry | None, overlay: Path) -> dict:
+                       grid: SiteGrid, footprint_utm: BaseGeometry | None, overlay: Path) -> tuple[dict, np.ndarray]:
+    """Stats and the boolean mask of pixels that went from dense green to bare."""
     # Open water gives noisy NDVI; permanent water (Hansen datamask) is left out on both sides.
     valid = land & np.isfinite(before_ndvi) & np.isfinite(after_ndvi)
     vegetated = valid & (before_ndvi >= NDVI_VEGETATED)
@@ -49,7 +50,7 @@ def vegetation_to_bare(before_ndvi: np.ndarray, after_ndvi: np.ndarray, land: np
     rgba[changed] = (*COLOUR, 190)
     overlay.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(rgba, "RGBA").save(overlay, optimize=True)
-    return stats
+    return stats, changed
 
 
 # McFeeters NDWI = (green - NIR) / (green + NIR). A gap between the two thresholds keeps pixels

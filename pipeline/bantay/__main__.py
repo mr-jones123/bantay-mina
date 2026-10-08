@@ -9,9 +9,13 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
 import yaml
+from PIL import Image
 
 from . import footprint as fp_mod
+from . import protected
+from .clouds import report as cloud_report
 from .change import vegetation_to_bare, water_change
 from .forest import forest_loss, land_mask
 from .grid import site_grid
@@ -24,6 +28,7 @@ PUBLIC = ROOT / "site" / "public" / "sites"
 ANALYSIS = ROOT / "site" / "src" / "data" / "analysis"
 RAW = PIPELINE / "data" / "raw"
 TANG_WERNER = RAW / "tang_werner" / "tw.shp"
+PROTECTED_AREAS = PIPELINE / "protected_areas.yaml"
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -102,13 +107,15 @@ def build(slug: str, config: dict) -> None:
     print(f"  forest loss in box: {forest['box']['lossHa']} ha")
 
     comparisons = []
+    changed_masks = {}
     for cmp in site["comparisons"]:
         web_dir = f"/sites/{slug}/{cmp['id']}"
         out_dir = site_public / cmp["id"]
         before, before_comp = build_side("before", cmp, cfg, grid, out_dir, web_dir)
         after, after_comp = build_side("after", cmp, cfg, grid, out_dir, web_dir)
         fp_utm = footprint.utm if footprint else None
-        change = vegetation_to_bare(before_comp.ndvi, after_comp.ndvi, land, grid, fp_utm, out_dir / "change.png")
+        change, changed_masks[cmp["id"]] = vegetation_to_bare(before_comp.ndvi, after_comp.ndvi, land, grid,
+                                                             fp_utm, out_dir / "change.png")
         change["overlay"] = f"{web_dir}/change.png"
         water = water_change(before_comp.ndwi, before_comp.nir, after_comp.ndwi, after_comp.nir,
                              land, grid, fp_utm, out_dir / "water.png")
@@ -127,6 +134,8 @@ def build(slug: str, config: dict) -> None:
             "water": water,
         })
 
+    nearby = _protected_areas(grid, footprint, changed_masks)
+
     b = grid.footprint_lonlat().bounds
     analysis = {
         "slug": slug,
@@ -142,10 +151,40 @@ def build(slug: str, config: dict) -> None:
         "comparisons": comparisons,
         "footprint": footprint_out,
         "forest": forest,
+        "protectedAreas": nearby,
     }
     ANALYSIS.mkdir(parents=True, exist_ok=True)
     (ANALYSIS / f"{slug}.json").write_text(json.dumps(analysis, indent=2, ensure_ascii=False) + "\n")
     print(f"  wrote {ANALYSIS / f'{slug}.json'}")
+
+
+def _protected_areas(grid, footprint, changed_masks: dict) -> list[dict]:
+    """Measure the site against every protected area (pipeline/protected_areas.yaml) that reaches its box."""
+    areas = protected.load(PROTECTED_AREAS)
+    protected.write_geojson(areas, PUBLIC.parent / "protected-areas.geojson")
+    nearby = protected.for_site(areas, grid, footprint.utm if footprint else None, changed_masks)
+    for a in nearby:
+        print(f"  {a['short']}: footprint {a['footprintDistanceKm']} km away; "
+              + ", ".join(f"{k}: {v['insideHa']} ha inside, {v['bufferHa']} ha in buffer" for k, v in a["change"].items()))
+    return nearby
+
+
+def protect(slug: str, config: dict) -> None:
+    """Re-measure protected areas for a built site from its saved layers, without reprocessing imagery."""
+    path = ANALYSIS / f"{slug}.json"
+    analysis = json.loads(path.read_text())
+    site = config["sites"][slug]
+    cfg = {**config["defaults"], **{k: v for k, v in site.items() if k in config["defaults"]}}
+    grid = site_grid(tuple(site["center"]), cfg["box_km"], cfg["pixel_m"])
+    if [grid.width, grid.height] != analysis["sizePx"]:
+        raise SystemExit(f"{slug}: box changed since the last build; run build instead")
+    footprint = fp_mod.load(grid, TANG_WERNER)
+    # change.png is opaque exactly where vegetation turned bare (see change.vegetation_to_bare).
+    masks = {cmp["id"]: np.array(Image.open(PUBLIC / slug / cmp["id"] / "change.png"))[..., 3] > 0
+             for cmp in analysis["comparisons"]}
+    print(slug)
+    analysis["protectedAreas"] = _protected_areas(grid, footprint, masks)
+    path.write_text(json.dumps(analysis, indent=2, ensure_ascii=False) + "\n")
 
 
 def retitle(slug: str, config: dict) -> None:
@@ -163,11 +202,9 @@ def retitle(slug: str, config: dict) -> None:
 
 def clouds(slug: str, config: dict) -> None:
     """Score month windows for a site from the Sentinel-2 cloud record (see bantay/clouds.py)."""
-    from .clouds import report
-
     site = config["sites"][slug]
     cfg = {**config["defaults"], **{k: v for k, v in site.items() if k in config["defaults"]}}
-    report(slug, site_grid(tuple(site["center"]), cfg["box_km"], cfg["pixel_m"]), tuple(cfg["months"]))
+    cloud_report(slug, site_grid(tuple(site["center"]), cfg["box_km"], cfg["pixel_m"]), tuple(cfg["months"]))
 
 
 def main() -> None:
@@ -177,6 +214,7 @@ def main() -> None:
         "build": (build, "build imagery + stats for one or all sites"),
         "retitle": (retitle, "refresh comparison titles in built JSON from sites.yaml"),
         "clouds": (clouds, "rank month windows by cloud-free coverage, to choose a site's `months`"),
+        "protect": (protect, "re-measure protected areas for a built site, without reprocessing imagery"),
     }
     for name, (_, help_text) in commands.items():
         p = sub.add_parser(name, help=help_text)

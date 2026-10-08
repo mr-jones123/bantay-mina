@@ -89,8 +89,10 @@ sites:
 
   dinapigue:
     name: Dinapigue nickel mine
-    center: [122.3085, 16.611] # Dinapigue, Isabela (Sierra Madre, Pacific coast)
-    box_km: 7
+    # Dinapigue, Isabela (Sierra Madre, Pacific coast). Box reaches north past the Northern Sierra
+    # Madre Natural Park boundary (RA 9125, about 16.648 N here) so it shows next to the mine.
+    center: [122.3085, 16.622]
+    box_km: 9
     comparisons:
       - id: landsat-2003-2026
         title: Before mine development (2003–06) vs. 2026
@@ -192,6 +194,93 @@ sites:
         sensor: sentinel-2
         max_scene_cloud: 80
         # Jan–May scenes only, so every "before" view predates the September 2018 landslide.
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  # ---- Southern Sierra Madre foothills: limestone and aggregate quarries (Bulacan, Rizal) ----
+  # Not in Tang & Werner; centres from the 2026 Sentinel-2 view and MGB/EMB permit locations.
+
+  norzagaray:
+    name: Norzagaray limestone quarries
+    # Republic Cement (MPSA 026-94-III, Minuyan, ~14.888 N) and Helix/Holcim (MPSA 140-99-III,
+    # Matictic-Bangkal, ~14.925 N), Norzagaray, Bulacan.
+    center: [121.085, 14.905]
+    box_km: 9
+    comparisons:
+      - id: landsat-1988-2026
+        title: Earliest Landsat view (1988–90) vs. 2026
+        sensor: landsat
+        before: { platforms: [landsat-5], years: [1988, 1989, 1990] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  akle-talbak:
+    name: Eagle Cement limestone quarries
+    # Eagle Cement Corp. MPSA 181-2002-III (Akle, San Ildefonso) and MPSA 245-2007-III (Talbak,
+    # Dona Remedios Trinidad; EIS quarry polygon centred ~15.062 N 121.070 E), Bulacan. Box reaches
+    # north to the southern edge of Biak-na-Bato National Park (~15.101 N).
+    center: [121.074, 15.078]
+    box_km: 8
+    comparisons:
+      - id: landsat-1988-2026
+        # Eagle's EPRMP: no activity for years after the 1998 ECC; Line 1 normal operation July 2010.
+        title: Before the Eagle Cement project (1988–90) vs. 2026
+        sensor: landsat
+        before: { platforms: [landsat-5], years: [1988, 1989, 1990] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
+  # Rodriguez, Rizal is split in two: between the quarry clusters lies the town's housing growth,
+  # which would otherwise dominate the vegetation -> bare figure.
+  rodriguez-macabud:
+    name: Macabud aggregate quarries
+    # ATN Holdings, MPSA 354-2024-IVA (EIS rectangle 14.7833-14.7917 N, 121.1333-121.1417 E), and
+    # neighbouring quarries in Macabud, Rodriguez, Rizal.
+    center: [121.152, 14.787]
+    box_km: 5
+    comparisons:
+      - id: landsat-1988-2026
+        title: Before the quarries (1988–90) vs. 2026
+        sensor: landsat
+        before: { platforms: [landsat-5], years: [1988, 1989, 1990] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Before ATN's quarry start (2016–17) vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        # ATN told the PSE on 13 July 2018 that quarry operations had started; Jan-May 2018 is
+        # left out so the "before" is clearly earlier.
+        before: { years: [2016, 2017] }
+        after: { years: [2026] }
+
+  rodriguez-san-rafael:
+    name: San Rafael quarries and Upper Wawa Dam
+    # Montalban Millex (MPSA 239-2007-IVA, ~14.717 N 121.158 E) and San Rafael Development /
+    # Majestic Earth Core (MPSA 136-99-IV, ~14.714 N 121.177 E) in San Rafael, Rodriguez; the Upper
+    # Wawa Dam's construction quarry (EIS point 14.701 N 121.201 E); Pamitinan Protected Landscape.
+    center: [121.183, 14.705]
+    box_km: 8
+    comparisons:
+      - id: landsat-1988-2026
+        title: Before the quarries (1988–90) vs. 2026
+        sensor: landsat
+        before: { platforms: [landsat-5], years: [1988, 1989, 1990] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Before Upper Wawa Dam construction (2016–18) vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        # MWSS: Phase 2 construction began 28 June 2021.
         before: { years: [2016, 2017, 2018] }
         after: { years: [2026] }
 

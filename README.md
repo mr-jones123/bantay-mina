@@ -10,21 +10,26 @@ Live: **https://bantay-mina.xy-800.workers.dev**
 
 ## Sites
 
-Seventeen sites: 10 in Luzon, 2 in the Visayas and 5 in Mindanao. "Green → bare" is the area that went
-from dense vegetation to bare ground or water between the two images of the first comparison. Each page
-also has a sharper Sentinel-2 comparison from 2016–18 to 2026.
+Twenty-one sites: 14 in Luzon, 2 in the Visayas and 5 in Mindanao. Five of them are on the Sierra Madre
+and have their own overview page (`/sierra-madre/`). "Green → bare" is the area that went from dense
+vegetation to bare ground or water between the two images of the first comparison. Each page also has a
+sharper Sentinel-2 comparison from 2016–18 to 2026.
 
 | Island group | Site | Province | First comparison | Green → bare |
 |---|---|---|---|---|
+| Luzon (Sierra Madre) | Akle–Talbak limestone quarries and cement plant (Eagle Cement) | Bulacan | Before the Eagle Cement project (1988–90) vs. 2026 | 86 ha |
 | Luzon | Barlo copper–gold–zinc mine (closed 1984) | Pangasinan | Four years after closure (1988–90) vs. 2026 | 9 ha |
 | Luzon | Cagayan River mouth black sand and dredging | Cagayan | Before the river dredging (2020) vs. 2024 | 330 ha¹ |
 | Luzon | Didipio gold–copper mine | Nueva Vizcaya | Before construction (2005–07) vs. 2026 | 172 ha |
-| Luzon | Dinapigue nickel mine | Isabela | Before mine development (2003–06) vs. 2026 | 72 ha |
+| Luzon (Sierra Madre) | Dinapigue nickel mine | Isabela | Before mine development (2003–06) vs. 2026 | 76 ha |
 | Luzon | Itogon gold mining district | Benguet | Late large-mine era (1988–90) vs. 2026 | 29 ha |
 | Luzon | Kasibu–Dupax exploration (baseline) | Nueva Vizcaya | Before exploration drilling (2024) vs. 2026 | 20 ha |
 | Luzon | Lepanto gold–copper mine | Benguet | Operating mine, 1988–90 vs. 2026 | 16 ha |
+| Luzon (Sierra Madre) | Macabud aggregate quarries | Rizal | Before the quarries (1988–90) vs. 2026 | 156 ha |
+| Luzon (Sierra Madre) | Norzagaray limestone and shale quarries | Bulacan | Earliest Landsat view (1988–90) vs. 2026 | 218 ha |
 | Luzon | Padcal copper–gold mine | Benguet | Operating mine, 1988–90 vs. 2026 | 143 ha |
 | Luzon | Runruno gold mine | Nueva Vizcaya | Before mine construction (2006–09) vs. 2026 | 116 ha |
+| Luzon (Sierra Madre) | San Rafael quarries and Upper Wawa Dam | Rizal | Before the quarries (1988–90) vs. 2026 | 295 ha² |
 | Luzon | Santa Cruz–Candelaria nickel mines | Zambales | Before the nickel expansion (2002–05) vs. 2026 | 340 ha |
 | Visayas | Semirara Island coal mines | Antique | Unong pit era (1988–90) vs. 2026 | 299 ha, plus ~2,370 ha of sea turned to land |
 | Visayas | Toledo copper mine | Cebu | Earlier mining era (1992–95) vs. 2026 | 201 ha |
@@ -35,6 +40,7 @@ also has a sharper Sentinel-2 comparison from 2016–18 to 2026.
 | Mindanao | Tubajon–Libjo nickel mines | Dinagat Islands | Before large-scale mining (1994–2002) vs. 2025–26 | 220 ha |
 
 ¹ Mostly rice fields ploughed or harvested in one year and green in the other, not mining. The page says so.
+² About 136 ha of it is the new Upper Wawa Dam reservoir, a government water project. The page says so.
 
 ## Ground rules
 
@@ -60,6 +66,7 @@ also has a sharper Sentinel-2 comparison from 2016–18 to 2026.
 | Hansen et al., Global Forest Change v1.13 | tree cover loss by year, land/water mask | CC BY 4.0 |
 | Tang & Werner 2023, global mining footprint | mapped mine outlines | CC BY 4.0 |
 | OpenStreetMap via OpenFreeMap | basemap | ODbL |
+| Protected-area laws (RA 9125 coordinates) and the Biodiversity Management Bureau's NIPAS layer on Geoportal Philippines | protected-area boundaries | Public law; government data |
 
 Landsat and Sentinel-2 are read through Microsoft Planetary Computer's public STAC API, with no API key.
 
@@ -67,8 +74,9 @@ Landsat and Sentinel-2 are read through Microsoft Planetary Computer's public ST
 
 ```
 pipeline/   Python: builds composites, overlays and figures for each site
-  sites.yaml     analysis boxes, months and before/after windows per site
-  bantay/        grid, imagery (STAC), clouds, change (NDVI/NDWI), forest (Hansen), footprint, render
+  sites.yaml          analysis boxes, months and before/after windows per site
+  protected_areas.yaml  protected areas drawn on the site: law coordinates or BMB polygons (cached in protected_areas/)
+  bantay/             grid, imagery (STAC), clouds, change (NDVI/NDWI), forest (Hansen), footprint, protected, render
   bantay/ml/     experimental mining classifier (not used on the website)
 site/       Astro: static site (MapLibre + OpenFreeMap basemap)
   src/content/sites/*.md    editorial content per site (sources required by schema)
@@ -98,6 +106,7 @@ Then build a site. The first run also downloads the Hansen tree cover, loss and 
 uv run python -m bantay clouds didipio  # which months give clear images here?
 uv run python -m bantay build didipio   # or: --all
 uv run python -m bantay retitle didipio # after editing only a comparison title in sites.yaml
+uv run python -m bantay protect didipio # after editing protected_areas.yaml: re-measure without new imagery
 ```
 
 A site takes about 3–15 minutes, depending on box size, and several sites can be built in parallel.
@@ -146,10 +155,16 @@ moves to its own domain, update `site` in `site/astro.config.mjs` so share image
    If you see them, add seasons to that side (e.g. `years: [2025, 2026]`) or allow cloudier scenes
    (`max_scene_cloud: 100`), and change the title to match.
 4. Write `site/src/content/sites/<slug>.md` with `analysis: <slug>` and `islandGroup` (Luzon, Visayas or
-   Mindanao). The build fails if any timeline entry or the permit cites a URL that is missing from
-   `sources`.
+   Mindanao), plus `mountainRange: Sierra Madre` for sites on that range. The build fails if any timeline
+   entry or the permit cites a URL that is missing from `sources`.
 5. Describe only what the images show. Claims about water, health or legality belong in the text, with a
    source.
+
+To add a protected area, add an entry to `pipeline/protected_areas.yaml`: either the corner coordinates
+printed in its law (with any typo corrections and the datum), or a point inside it and its name in the
+Biodiversity Management Bureau's NIPAS layer, which is fetched once and cached. Every boundary must
+enclose the area its law states to within 3%, or loading fails. Then run `bantay protect <slug>` for the
+sites whose box it reaches.
 
 ## What the numbers mean
 
@@ -198,7 +213,10 @@ uv run python -m bantay.ml predict --year 2026 # candidates for the Northern Luz
 - NLMRC's Kasibu exploration permit: no public map or coordinates yet, so it has no image box. The
   Dupax (Woggle) box is placed from the company's own published target map.
 - More sites: Palawan (Rio Tuba, Brooke's Point), Masbate (Aroroy), Marinduque (Marcopper), Davao de Oro,
-  Zamboanga.
+  Zamboanga, and on the Sierra Madre the Teresa–Antipolo limestone quarries (Rizal).
+- Protected-area boundaries left off the map because the official records disagree: Proclamation 1636
+  (1977) in Rizal, the Angat Watershed Reservation (Proclamation 71, 1927) and Biak-na-Bato National Park.
+  The reasons are in `pipeline/protected_areas.yaml`.
 - The 99 ha cluster near Tuba, Benguet (120.566, 16.168) looks like a limestone quarry and cement
   plant; not verified and not included.
 

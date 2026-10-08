@@ -41,6 +41,30 @@ const waterNote = [
   .join(', and ')
   .replace(/^./, (c) => c.toUpperCase());
 const waterSentence = waterNote && `${waterNote}.`;
+// Protected areas whose legal boundary reaches this box: where the mapped mine is relative to each,
+// then one sentence on how much of the clearing (all causes, not only mining) falls inside them.
+const km = (v: number) => `${v.toLocaleString('en-US', { maximumFractionDigits: 1 })} km`;
+const mineNotes = analysis.protectedAreas.map((p) => {
+  const d = p.footprintDistanceKm;
+  if (d === null) return '';
+  if (d === 0) return `Part of the mapped mine footprint is inside the ${p.name} (${p.law}).`;
+  const base = `The mapped mine footprint is ${km(d)} from the boundary of the ${p.name} (${p.law})`;
+  if (!p.bufferKm) return `${base}.`;
+  return d > p.bufferKm
+    ? `${base}, beyond its buffer zone, which the law sets at up to ${km(p.bufferKm)} wide.`
+    : `${base}, within the ${km(p.bufferKm)} band where the law sets its buffer zone.`;
+});
+const amount = (v: number) => (v < 0.5 ? 'none' : haText(v));
+const insideParts = analysis.protectedAreas.flatMap((p) => {
+  const c = p.change[comparison.id];
+  if (!c) return [];
+  const buffer = p.bufferKm ? ` (${amount(c.bufferHa)} in its buffer)` : '';
+  return [`${amount(c.insideHa)} inside the ${p.short}${buffer}`];
+});
+const protectedNotes = [
+  ...mineNotes,
+  insideParts.length ? `Of the ground that lost its green cover (all causes): ${insideParts.join('; ')}.` : '',
+];
 ---
 
 <figure class="ba" data-ba>
@@ -58,6 +82,17 @@ const waterSentence = waterNote && `${waterNote}.`;
           </svg>
         </div>
       )
+    }
+    {
+      analysis.protectedAreas.map((p) => (
+        <div class={`overlay protected-${p.id}`} aria-hidden="true" hidden>
+          <svg viewBox={`0 0 ${w} ${h}`}>
+            <path class="pa-fill" d={p.areaSvgPath} />
+            <path class="pa-buffer" d={p.bufferSvgPath} />
+            <path class="pa-line" d={p.boundarySvgPath} />
+          </svg>
+        </div>
+      ))
     }
     <div class="handle" aria-hidden="true"></div>
     <input
@@ -80,7 +115,7 @@ const waterSentence = waterNote && `${waterNote}.`;
         ) : (
           <>, {haText(comparison.change.insideFootprintHa)} of it inside the mapped mine footprint</>
         ))
-    }.{waterSentence && ` ${waterSentence}`}
+    }.{waterSentence && ` ${waterSentence}`}{protectedNotes.filter(Boolean).map((n) => ` ${n}`)}
   </p>
 
   <div class="controls">
@@ -103,6 +138,16 @@ const waterSentence = waterNote && `${waterNote}.`;
           <input type="checkbox" data-toggle="footprint" /> Mapped mine footprint
         </label>
       )
+    }
+    {
+      analysis.protectedAreas.map((p) => (
+        <label>
+          <input type="checkbox" data-toggle={`protected-${p.id}`} /> {p.short} boundary
+          <span class="ramp" aria-hidden="true"><i class="pa-key"></i></span><span class="muted"
+            >{p.law}{p.bufferKm > 0 && `; dashed: ${p.bufferKm} km buffer`}</span
+          >
+        </label>
+      ))
     }
     <label>
       <input type="checkbox" data-toggle="loss" /> Tree cover lost {lossFrom}–{lossTo}
@@ -195,6 +240,24 @@ const waterSentence = waterNote && `${waterNote}.`;
     stroke: #6ff3ff;
     stroke-width: 1.6;
     vector-effect: non-scaling-stroke;
+  }
+  .pa-fill {
+    fill: rgba(80, 220, 120, 0.12);
+    stroke: none;
+  }
+  .pa-line,
+  .pa-buffer {
+    fill: none;
+    stroke: #5dff8f;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+  .pa-buffer {
+    stroke-width: 1.4;
+    stroke-dasharray: 6 4;
+  }
+  .pa-key {
+    background: #5dff8f;
   }
   .handle {
     position: absolute;

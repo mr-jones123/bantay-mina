@@ -1,15 +1,17 @@
 ---
 import PermitNotice from '../components/PermitNotice.astro';
+import SiteList from '../components/SiteList.astro';
 import SiteMap from '../components/SiteMap.astro';
 import Base from '../layouts/Base.astro';
 import { asset } from '../lib/paths';
-import { ha, loadSites, toMapSite } from '../lib/sites';
+import { loadSites, toMapSite } from '../lib/sites';
 
 const all = await loadSites();
 const mapSites = all.map(toMapSite);
 const GROUPS = ['Luzon', 'Visayas', 'Mindanao'] as const;
 const groups = GROUPS.map((g) => ({ name: g, sites: all.filter(({ site }) => site.data.islandGroup === g) }))
   .filter((g) => g.sites.length);
+const sierraMadre = all.filter(({ site }) => site.data.mountainRange === 'Sierra Madre').length;
 ---
 
 <Base
@@ -30,41 +32,12 @@ const groups = GROUPS.map((g) => ({ name: g, sites: all.filter(({ site }) => sit
 
     <SiteMap sites={mapSites} />
 
-    {
-      groups.map((g) => (
-        <section class="list">
-          <h2 class="label">{g.name} · {g.sites.length} {g.sites.length === 1 ? 'site' : 'sites'}</h2>
-          <ul>
-            {
-              g.sites.map(({ site, analysis }) => {
-                const first = analysis.comparisons[0];
-                return (
-                  <li>
-                    <a class="card" href={asset(`/sites/${site.id}/`)}>
-                      <span class="thumbs">
-                        <img src={asset(first.before.image)} alt="" width="120" height="120" loading="lazy" />
-                        <img src={asset(first.after.image)} alt="" width="120" height="120" loading="lazy" />
-                      </span>
-                      <span class="text">
-                        <span class="label">
-                          {site.data.municipality}, {site.data.province}
-                        </span>
-                        <strong>{site.data.name}</strong>
-                        <span class="muted">{site.data.summary}</span>
-                        <span class="num stats">
-                          {analysis.footprint && <>{ha(analysis.footprint.areaHa)} mapped footprint · </>}
-                          {ha(first.change.vegetationToBareHa)} vegetation → bare, {first.before.years[0]}→{first.after.years.at(-1)}
-                        </span>
-                      </span>
-                    </a>
-                  </li>
-                );
-              })
-            }
-          </ul>
-        </section>
-      ))
-    }
+    <p class="range-link">
+      <a href={asset('/sierra-madre/')}>Sierra Madre</a>: {sierraMadre} sites along the range, the protected
+      areas around them, and what the law actually protects.
+    </p>
+
+    {groups.map((g) => <SiteList title={g.name} sites={g.sites} />)}
   </div>
 </Base>
 
@@ -84,58 +57,11 @@ const groups = GROUPS.map((g) => ({ name: g, sites: all.filter(({ site }) => sit
     margin-top: 0.9rem;
     color: var(--muted);
   }
-  .list {
-    margin-top: 2.2rem;
+  .range-link {
+    margin-top: 1rem;
+    color: var(--muted);
   }
-  .list h2 {
-    margin-bottom: 0.6rem;
-  }
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    border-top: 1px solid var(--line);
-  }
-  .card {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 1.2rem;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--line);
-    text-decoration: none;
-  }
-  .card:hover strong {
-    color: var(--accent);
-  }
-  .thumbs {
-    display: flex;
-    gap: 2px;
-  }
-  .thumbs img {
-    width: 96px;
-    height: 96px;
-    object-fit: cover;
-    border-radius: 4px;
-  }
-  .text {
-    display: grid;
-    gap: 0.2rem;
-    align-content: start;
-    max-width: 46rem;
-  }
-  strong {
-    font-size: 1.15rem;
+  .range-link a {
     font-weight: 600;
-    transition: color 150ms;
-  }
-  .stats {
-    font-size: 0.78rem;
-    color: var(--accent);
-    margin-top: 0.2rem;
-  }
-  @media (max-width: 560px) {
-    .card {
-      grid-template-columns: 1fr;
-    }
   }
 </style>

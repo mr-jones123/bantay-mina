@@ -6,13 +6,17 @@ interface Props {
   sites: MapSite[];
   /** Zoom to this site's analysis box instead of the whole region. */
   focus?: string;
+  /** Start at these bounds [west, south, east, north] instead of fitting every site. */
+  bounds?: [number, number, number, number];
   height?: string;
 }
 
-const { sites, focus, height = '460px' } = Astro.props;
+const { sites, focus, bounds, height = '460px' } = Astro.props;
 const config = {
   sites: sites.map((s) => ({ ...s, footprint: s.footprint && asset(s.footprint) })),
   focus: focus ?? null,
+  bounds: bounds ?? null,
+  protectedAreas: asset('/protected-areas.geojson'),
 };
 ---
 
@@ -46,7 +50,12 @@ const config = {
   });
 
   for (const el of document.querySelectorAll<HTMLElement>('[data-map]')) {
-    const { sites, focus } = JSON.parse(el.dataset.map!) as { sites: MapSite[]; focus: string | null };
+    const { sites, focus, bounds, protectedAreas } = JSON.parse(el.dataset.map!) as {
+      sites: MapSite[];
+      focus: string | null;
+      bounds: MapSite['bounds'] | null;
+      protectedAreas: string;
+    };
     const focused = sites.find((s) => s.id === focus);
     // Overview: the union of every site box, so new sites anywhere in the country stay in view.
     const all: MapSite['bounds'] = [
@@ -56,7 +65,7 @@ const config = {
     const map = new MapLibreMap({
       container: el,
       style: STYLE,
-      bounds: focused ? focused.bounds : all,
+      bounds: focused ? focused.bounds : (bounds ?? all),
       fitBoundsOptions: { padding: focused ? 40 : 30 },
       cooperativeGestures: true,
       attributionControl: { compact: true },
@@ -65,6 +74,48 @@ const config = {
     map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-left');
 
     map.on('load', async () => {
+      // Protected areas whose boundary is written into law; drawn under the mine layers.
+      map.addSource('protected', {
+        type: 'geojson',
+        data: protectedAreas,
+        attribution: 'Protected-area boundaries from the laws that declare them',
+      });
+      map.addLayer({
+        id: 'protected-fill',
+        type: 'fill',
+        source: 'protected',
+        filter: ['==', ['get', 'kind'], 'area'],
+        paint: { 'fill-color': '#2f8f4e', 'fill-opacity': 0.12 },
+      });
+      map.addLayer({
+        id: 'protected-line',
+        type: 'line',
+        source: 'protected',
+        filter: ['==', ['get', 'kind'], 'area'],
+        paint: { 'line-color': '#2f8f4e', 'line-width': 1.5 },
+      });
+      map.addLayer({
+        id: 'protected-buffer',
+        type: 'line',
+        source: 'protected',
+        filter: ['==', ['get', 'kind'], 'buffer'],
+        minzoom: 9,
+        paint: { 'line-color': '#2f8f4e', 'line-width': 1, 'line-dasharray': [3, 2] },
+      });
+      map.on('click', 'protected-fill', (e: MapLayerMouseEvent) => {
+        if (map.queryRenderedFeatures(e.point, { layers: ['sites'] }).length) return;
+        const p = e.features?.[0]?.properties;
+        if (!p) return;
+        const html = document.createElement('div');
+        const name = document.createElement('strong');
+        name.textContent = p.name;
+        const law = document.createElement('a');
+        law.href = p.url;
+        law.textContent = p.law;
+        html.append(name, document.createElement('br'), law);
+        new Popup({ closeButton: false }).setLngLat(e.lngLat).setDOMContent(html).addTo(map);
+      });
+
       map.addSource('boxes', { type: 'geojson', data: { type: 'FeatureCollection', features: sites.map((s) => box(s.bounds)) } });
       map.addLayer({
         id: 'boxes',

@@ -1,0 +1,203 @@
+---
+import PermitNotice from '../components/PermitNotice.astro';
+import SiteList from '../components/SiteList.astro';
+import SiteMap from '../components/SiteMap.astro';
+import Base from '../layouts/Base.astro';
+import { asset } from '../lib/paths';
+import { loadSites, toMapSite } from '../lib/sites';
+
+const all = await loadSites();
+// North to south along the range.
+const range = all
+  .filter(({ site }) => site.data.mountainRange === 'Sierra Madre')
+  .sort((a, b) => b.analysis.center[1] - a.analysis.center[1]);
+const dinapigue = all.find(({ site }) => site.id === 'dinapigue');
+const nsmnp = dinapigue?.analysis.protectedAreas.find((p) => p.id === 'nsmnp');
+const km = (v: number) => `${v.toLocaleString('en-US', { maximumFractionDigits: 1 })} km`;
+
+const LAW = {
+  ra9125: 'https://lawphil.net/statutes/repacts/ra2001/ra_9125_2001.html',
+  ra11038: 'https://lawphil.net/statutes/repacts/ra2018/ra_11038_2018.html',
+  enipasText: 'https://elibrary.judiciary.gov.ph/thebookshelf/showdocs/2/84999',
+  ra7942: 'https://lawphil.net/statutes/repacts/ra1995/ra_7942_1995.html',
+  proc413: 'https://lawphil.net/executive/proc/proc2012/proc_413_2012.html',
+};
+const areas = [
+  { name: 'Northern Sierra Madre Natural Park', where: 'Isabela', law: 'RA 9125 (2001)', url: LAW.ra9125 },
+  { name: 'Peñablanca Protected Landscape and Seascape', where: 'Cagayan', law: 'Proc. 484 (2003); RA 11038', url: 'https://lawphil.net/executive/proc/proc2003/proc_484_2003.html' },
+  { name: 'Quirino Protected Landscape', where: 'Quirino', law: 'Proc. 548 (2004), Proc. 779 (2005)', url: 'https://lawphil.net/executive/proc/proc2005/proc_779_2005.html' },
+  { name: 'Casecnan Protected Landscape', where: 'Nueva Vizcaya, Quirino, Aurora', law: 'Proc. 289 (2000); RA 11038', url: 'https://lawphil.net/executive/proc/proc2000/proc_289_2000.html' },
+  { name: 'Aurora Memorial Park', where: 'Aurora, Nueva Ecija', law: 'Proc. 220 (1937), Proc. 130 (1949)', url: 'https://lawphil.net/executive/proc/proc1949/proc_130_1949.html' },
+  { name: 'Angat Watershed Reservation', where: 'Bulacan, Rizal, Nueva Ecija, Quezon', law: 'Proc. 71 (1927), Proc. 505 (1965)', url: 'https://lawphil.net/executive/proc/proc1965/proc_505_1965.html' },
+  { name: 'Pamitinan Protected Landscape', where: 'Rizal', law: 'Proc. 901 (1996); RA 11038', url: 'https://lawphil.net/executive/proc/proc1996/proc_901_1996.html' },
+  { name: 'Upper Marikina River Basin Protected Landscape', where: 'Rizal', law: 'Proc. 296 (2011); RA 11038', url: 'https://lawphil.net/executive/proc/proc2011/proc_296_2011.html' },
+  { name: 'Kaliwa River Forest Reserve', where: 'Quezon, Rizal', law: 'Proc. 573 (1969)', url: 'https://lawphil.net/executive/proc/proc1969/proc_573_1969.html' },
+];
+---
+
+<Base
+  title="Sierra Madre"
+  description="Mines and quarries along the Sierra Madre in before-and-after satellite images, and what the law actually protects."
+>
+  <div class="wrap">
+    <header class="head">
+      <p class="label">Sierra Madre · satellite record</p>
+      <h1>Mining along the Sierra Madre</h1>
+      <p class="lede">
+        The Sierra Madre runs down the Pacific side of Luzon, from Cagayan to Quezon. This page collects the
+        mines and quarries on the range that are large enough to measure from space, the protected areas around
+        them, and what the law protects.
+      </p>
+    </header>
+
+    <div class="heads-up"><PermitNotice /></div>
+
+    <SiteMap sites={range.map(toMapSite)} bounds={[120.6, 14.4, 122.8, 17.8]} height="560px" />
+    <p class="small muted">
+      Green outlines: protected areas whose boundaries are on this site so far. Click one for its law.
+    </p>
+
+    <section class="prose">
+      <h2>Is the Sierra Madre protected by law?</h2>
+      <p>
+        Parts of it are. No single law covers the whole range.
+      </p>
+      <p>
+        <a href={LAW.ra9125}>Republic Act 9125</a> (2001) created the Northern Sierra Madre Natural Park. It covers
+        only the Isabela part of the range: 287,861 hectares of land and 71,625 hectares of coastal water. It
+        bans <q>Exploration, exploitation or extraction, drilling or prospecting for minerals or resources, or
+        engages in quarrying within the NSMNP or its buffer zones</q> (Section 21(h)), and sets those buffer
+        zones at <q>not more than one (1) kilometer wide</q> from the park boundary (Section 5).
+      </p>
+      <p>
+        Other parts of the range are protected one area at a time, each by its own proclamation or law. Inside
+        the protected areas of the national system, the 2018 ENIPAS Act (<a href={LAW.ra11038}>RA 11038</a>)
+        prohibits <q>Undertaking mineral exploration or extraction within the protected area</q> and
+        <q>Engaging in commercial or large-scale quarrying within the protected area</q> (<a href={LAW.enipasText}
+          >NIPAS Act Section 20, as amended</a
+        >). Existing rights are respected, but their renewal is subject to the act. Separately, the Mining Act
+        (<a href={LAW.ra7942}>RA 7942, Section 19</a>) closes proclaimed watershed forest reserves to new
+        mineral agreements.
+      </p>
+      <table>
+        <thead><tr><th>Protected area</th><th>Province</th><th>Declared by</th></tr></thead>
+        <tbody>
+          {
+            areas.map((a) => (
+              <tr>
+                <td>{a.name}</td>
+                <td>{a.where}</td>
+                <td><a href={a.url}>{a.law}</a></td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+      <p>
+        September 26 is <a href={LAW.proc413}>Save Sierra Madre Day</a> (Proclamation 413, 2012). That is an
+        observance: it does not set boundaries or ban mining. Bills to create an authority for the whole range
+        have been filed in Congress; none had become law when this page was checked.
+      </p>
+
+      <h2>Dinapigue and the natural park</h2>
+      <p>
+        In May 2025 a photo of cleared forest in Dinapigue, Isabela went viral. The Federation of Environmental
+        Advocates in Cagayan Valley called for a halt and an investigation into mining it said was inside the
+        protected Sierra Madre. Dinapigue Mining Corporation, a Nickel Asia subsidiary, replied that <q>all our
+        operations are conducted outside the boundaries of the Sierra Madre Natural Park</q> (<a
+          href="https://newsinfo.inquirer.net/2063127/outcry-grows-over-alleged-mining-in-sierra-madre-protected-area"
+          >Philippine Daily Inquirer, May 24, 2025</a
+        >). At a 2025 stakeholders' forum, MGB Region II Director Mario Ancheta said the company had permits to
+        mine and cut trees in a designated 15-hectare area <q>situated 1.1 kilometers from the protected zone</q>
+        (<a
+          href="https://region2.mgb.gov.ph/%F0%9D%97%97%F0%9D%97%B6%F0%9D%97%BB%F0%9D%97%AE%F0%9D%97%BD%F0%9D%97%B6%F0%9D%97%B4%F0%9D%98%82%F0%9D%97%B2-%F0%9D%97%A0%F0%9D%97%B6%F0%9D%97%BB%F0%9D%97%B2%F0%9D%98%80-%F0%9D%97%BF%F0%9D%97%B2/"
+          >MGB Region II</a
+        >).
+      </p>
+      {
+        nsmnp && nsmnp.footprintDistanceKm !== null && (
+          <p>
+            This site draws the park boundary from the corner coordinates printed in RA 9125 itself, and checks it
+            against the Biodiversity Management Bureau's own map of the park (they agree to within 36 metres). On
+            that boundary, the mapped Dinapigue mine is <strong>{km(nsmnp.footprintDistanceKm)}</strong> from the
+            park, beyond the 1 km buffer zone. None of the clearing around the mine pits reaches the park or its
+            buffer; the few hectares the images count inside are along the shoreline. The{' '}
+            <a href={asset('/sites/dinapigue/')}>Dinapigue page</a> has the images, with the park boundary as a
+            layer. How the boundary is rebuilt, including two misprinted coordinates in the law, is on the{' '}
+            <a href={asset('/methods/#protected-areas')}>Methods page</a>.
+          </p>
+        )
+      }
+
+      <h2>What the images can't show here</h2>
+      <p>
+        The northern half of the range has few large open mines. Besides the Dinapigue nickel mine, MGB Region
+        II's 2025 directory lists only sand-and-gravel permits in the range's towns of Peñablanca, Baggao and
+        Gonzaga (Cagayan), San Mariano (Isabela) and Maddela (Quirino), from under 1 hectare
+        to about 20 hectares each (<a
+          href="https://region2.mgb.gov.ph/wp-content/uploads/2026/03/Directory-of-Operating-Mines-and-Quarries.pdf"
+          >MGB Region II</a
+        >). Most of those are in riverbeds and are too small to measure reliably at 10–30 m. Unpermitted
+        small-scale digging is not in any of these records.
+      </p>
+      <p>
+        The biggest bare ground on the range is at its southern end, in the limestone and rock quarries of
+        Bulacan and Rizal that supply cement and aggregates to Metro Manila. The published mine-outline dataset
+        used elsewhere on this site does not map them, so their boxes come from MGB permit lists, EMB
+        environmental documents and the 2026 Sentinel-2 images.
+      </p>
+    </section>
+
+    <SiteList title="Sites on the Sierra Madre, north to south" sites={range} />
+  </div>
+</Base>
+
+<style>
+  .head {
+    padding: 2.4rem 0 1.6rem;
+    max-width: 44rem;
+  }
+  .head .label {
+    margin-bottom: 0.7rem;
+  }
+  .heads-up {
+    margin-bottom: 1rem;
+  }
+  .lede {
+    font-size: 1.08rem;
+    margin-top: 0.9rem;
+    color: var(--muted);
+  }
+  .small {
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+  }
+  .prose {
+    max-width: 44rem;
+    margin-top: 2rem;
+  }
+  .prose h2 {
+    margin-top: 2rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    margin: 1rem 0;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 0.35rem 0.5rem 0.35rem 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+</style>

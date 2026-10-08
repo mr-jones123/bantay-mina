@@ -5,6 +5,7 @@ municipality: Dinapigue
 province: Isabela
 region: Cagayan Valley (Region II)
 islandGroup: Luzon
+mountainRange: Sierra Madre
 operator: Dinapigue Mining Corporation (100%-owned by Nickel Asia Corporation)
 commodities: [nickel]
 stage: operating
@@ -115,6 +116,13 @@ pixel that went from green vegetation to bare ground; the sea is left out.
 The Sentinel-2 pair starts in 2016–2018, when the roads and several clearings already existed. Most of the
 change since then is a new clearing in the middle of the box and widened roads.
 
+The box reaches north past the boundary of the Northern Sierra Madre Natural Park, drawn from the
+coordinates in RA 9125 (switch on the NSMNP layer). The northernmost pit is about 1.2 km south of the
+park, beyond the buffer zone, which the law sets at up to 1 km. That matches MGB Region II's statement in
+2025 that the permitted area is 1.1 km from the protected zone. No pit, road or clearing around the mine
+reaches the park or its buffer. The few hectares the layer counts inside are along the shore, where beach
+and surf differ between the image dates, and on small patches of coastal grassland near it. The
+[Sierra Madre page](/sierra-madre/) covers the May 2025 dispute over the mine's location.
 
 ## Who lives here
 
