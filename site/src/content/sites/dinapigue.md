@@ -71,6 +71,24 @@ timeline:
       Nickel Asia reports that Dinapigue exported 0.3 million wet metric tonnes of saprolite and limonite ore
       during the year, confirming that the mine remains in production.
     sources: [https://nickelasia.com/assets/documents/C2605-NIKL-2026-AGM-Definitive-Information-Statement-with-SEC-17-A-2025-AFS-and-17-Q.pdf]
+  - date: 2025-05-24
+    text: >-
+      A viral photo of cleared forest in Dinapigue prompts the Federation of Environmental Advocates in Cagayan
+      Valley to demand a halt and an investigation, alleging mining inside the protected Sierra Madre. Dinapigue
+      Mining Corporation says all its operations are outside the Northern Sierra Madre Natural Park.
+    sources: [https://newsinfo.inquirer.net/2063127/outcry-grows-over-alleged-mining-in-sierra-madre-protected-area]
+  - date: '2025'
+    text: >-
+      At an MGB stakeholders' forum, MGB Region II Director Mario Ancheta says the company has permits to mine
+      and cut trees in a designated 15-hectare area 1.1 km from the protected zone, that about 12,000 trees
+      have been cut, and that the company must plant 100 trees for every tree cut.
+    sources: [https://region2.mgb.gov.ph/%F0%9D%97%97%F0%9D%97%B6%F0%9D%97%BB%F0%9D%97%AE%F0%9D%97%BD%F0%9D%97%B6%F0%9D%97%B4%F0%9D%98%82%F0%9D%97%B2-%F0%9D%97%A0%F0%9D%97%B6%F0%9D%97%BB%F0%9D%97%B2%F0%9D%98%80-%F0%9D%97%BF%F0%9D%97%B2/]
+  - date: 2026-04-16
+    text: >-
+      The Pollution Adjudication Board fines Dinapigue Mining Corporation PhP2,501,070 for violations of the
+      Clean Water Act (RA 9275). Nickel Asia discloses the order on May 18, 2026, the day the company received
+      it, and says the company has adopted remediation measures and will pay by June 2, 2026.
+    sources: [https://edge.pse.com.ph/downloadHtml.do?file_id=1916333]
 sources:
   - title: Tribal folk endorse mining project in Isabela town
     publisher: Philstar
@@ -104,7 +122,19 @@ sources:
     publisher: GMA Integrated News
     url: https://www.gmanetwork.com/news/balitambayan/talakayan/967309/bahagi-ng-kabundukan-ng-sierra-madre-nakalbo-dahil-sa-minahan/story/
     date: 2025-11-25
-lastReviewed: 2026-09-29
+  - title: Outcry grows over alleged mining in Sierra Madre protected area
+    publisher: Philippine Daily Inquirer
+    url: https://newsinfo.inquirer.net/2063127/outcry-grows-over-alleged-mining-in-sierra-madre-protected-area
+    date: 2025-05-24
+  - title: Dinapigue Mines reaffirms commitment to safety, sustainability
+    publisher: Mines and Geosciences Bureau Region II
+    url: https://region2.mgb.gov.ph/%F0%9D%97%97%F0%9D%97%B6%F0%9D%97%BB%F0%9D%97%AE%F0%9D%97%BD%F0%9D%97%B6%F0%9D%97%B4%F0%9D%98%82%F0%9D%97%B2-%F0%9D%97%A0%F0%9D%97%B6%F0%9D%97%BB%F0%9D%97%B2%F0%9D%98%80-%F0%9D%97%BF%F0%9D%97%B2/
+    date: '2025'
+  - title: Disclosure due to a fine imposed by the Pollution Adjudication Board on Dinapigue Mining Corporation
+    publisher: Philippine Stock Exchange disclosure by Nickel Asia Corporation (SEC Form 17-C)
+    url: https://edge.pse.com.ph/downloadHtml.do?file_id=1916333
+    date: 2026-05-18
+lastReviewed: 2026-10-09
 ---
 
 ## What the images show
@@ -150,6 +180,15 @@ water and the rights of resident Indigenous communities. It bars mineral explora
 park and buffer zones. Dinapigue Mining Corporation told GMA that its operation is outside the protected area,
 with a 1.1-kilometre buffer. GMA said the government agencies that permitted the mine declined its interview
 requests for that report.
+
+MGB Region II's Director said in 2025 that the company's permitted mining and tree-cutting area is a
+designated 15 hectares, 1.1 km from the protected zone, and that about 12,000 trees, including small ones,
+had been cut as site preparation; the company must plant 100 trees for every tree cut. The images on this
+page measure the mapped mine at about 1.2 km from the park boundary.
+
+In April 2026 the Pollution Adjudication Board fined the company PhP2,501,070 for violating the Clean Water
+Act. Nickel Asia's disclosure does not describe the violation. It says the company has adopted measures to
+remediate it.
 
 Nickel Asia calls Dinapigue one of its operating mines. It reported 0.3 million wet metric tonnes of Dinapigue
 ore exports in 2025. The filing says the group's high-iron limonite and much of its mid-grade saprolite go to
