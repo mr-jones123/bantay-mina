@@ -284,6 +284,26 @@ sites:
         before: { years: [2016, 2017, 2018] }
         after: { years: [2026] }
 
+  teresa:
+    name: Teresa limestone quarries
+    # Republic Cement Teresa (MPSA 138-99-IV, ~14.540-14.551 N 121.198-121.203 E) and the Teresa
+    # Marble / Island Quarry and Aggregates quarry (MPSA 124-98-IV, 125-98-IV; Pantay/May-Iba,
+    # ~14.555-14.593 N 121.21 E), Teresa and Antipolo, Rizal. No BMB protected area reaches the box.
+    center: [121.215, 14.563]
+    box_km: 9
+    comparisons:
+      - id: landsat-1988-2026
+        title: Earliest Landsat view (1988–90) vs. 2026
+        sensor: landsat
+        before: { platforms: [landsat-5], years: [1988, 1989, 1990] }
+        after: { platforms: [landsat-8, landsat-9], years: [2026] }
+      - id: sentinel2-2016-2026
+        title: Recent change, 2016–18 vs. 2026
+        sensor: sentinel-2
+        max_scene_cloud: 80
+        before: { years: [2016, 2017, 2018] }
+        after: { years: [2026] }
+
   # ---- Visayas and Mindanao ----
 
   semirara:

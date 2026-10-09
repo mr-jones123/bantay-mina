@@ -10,7 +10,7 @@ Live: **https://bantay-mina.xy-800.workers.dev**
 
 ## Sites
 
-Twenty-one sites: 14 in Luzon, 2 in the Visayas and 5 in Mindanao. Five of them are on the Sierra Madre
+Twenty-two sites: 15 in Luzon, 2 in the Visayas and 5 in Mindanao. Five of them are on the Sierra Madre
 and have their own overview page (`/sierra-madre/`). "Green → bare" is the area that went from dense
 vegetation to bare ground or water between the two images of the first comparison. Each page also has a
 sharper Sentinel-2 comparison from 2016–18 to 2026.
@@ -31,6 +31,7 @@ sharper Sentinel-2 comparison from 2016–18 to 2026.
 | Luzon | Runruno gold mine | Nueva Vizcaya | Before mine construction (2006–09) vs. 2026 | 116 ha |
 | Luzon (Sierra Madre) | San Rafael quarries and Upper Wawa Dam | Rizal | Before the quarries (1988–90) vs. 2026 | 295 ha² |
 | Luzon | Santa Cruz–Candelaria nickel mines | Zambales | Before the nickel expansion (2002–05) vs. 2026 | 340 ha |
+| Luzon | Teresa–Antipolo quarry corridor | Rizal | Earliest Landsat view (1988–90) vs. 2026 | 365 ha³ |
 | Visayas | Semirara Island coal mines | Antique | Unong pit era (1988–90) vs. 2026 | 299 ha, plus ~2,370 ha of sea turned to land |
 | Visayas | Toledo copper mine | Cebu | Earlier mining era (1992–95) vs. 2026 | 201 ha |
 | Mindanao | Carrascal–Cantilan nickel mines | Surigao del Sur | Before large-scale nickel mining (1994–2002) vs. 2026 | 1,487 ha |
@@ -41,6 +42,7 @@ sharper Sentinel-2 comparison from 2016–18 to 2026.
 
 ¹ Mostly rice fields ploughed or harvested in one year and green in the other, not mining. The page says so.
 ² About 136 ha of it is the new Upper Wawa Dam reservoir, a government water project. The page says so.
+³ Mostly housing and farm plots around the quarries; both quarry areas were already open in 1988. The page says so.
 
 ## Ground rules
 
@@ -213,7 +215,7 @@ uv run python -m bantay.ml predict --year 2026 # candidates for the Northern Luz
 - NLMRC's Kasibu exploration permit: no public map or coordinates yet, so it has no image box. The
   Dupax (Woggle) box is placed from the company's own published target map.
 - More sites: Palawan (Rio Tuba, Brooke's Point), Masbate (Aroroy), Marinduque (Marcopper), Davao de Oro,
-  Zamboanga, and on the Sierra Madre the Teresa–Antipolo limestone quarries (Rizal).
+  Zamboanga.
 - Protected-area boundaries left off the map because the official records disagree: Proclamation 1636
   (1977) in Rizal, the Angat Watershed Reservation (Proclamation 71, 1927) and Biak-na-Bato National Park.
   The reasons are in `pipeline/protected_areas.yaml`.
