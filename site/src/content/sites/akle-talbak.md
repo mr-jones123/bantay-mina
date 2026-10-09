@@ -6,6 +6,7 @@ province: Bulacan
 region: Central Luzon (Region III)
 islandGroup: Luzon
 mountainRange: Sierra Madre
+mountainRangeSource: https://eia.emb.gov.ph/wp-content/uploads/2022/08/Eagle-EPRMP_19August2022.pdf
 operator: Eagle Cement Corporation, a subsidiary of San Miguel Equity Investments, Inc.
 commodities: [limestone, shale]
 stage: operating
@@ -186,6 +187,12 @@ Most of the quarry ground itself was not dense green before, so it counts only p
 The box reaches north to the area of Eagle's northern parcels and Biak-na-Bato National Park. At 10 m no
 large new bare ground shows there in 2026. The park's boundary is not drawn, because the official records
 of it conflict (see below), and the images do not show which permit parcel each pit belongs to.
+
+## On the Sierra Madre
+
+Eagle Cement's 2022 environmental performance report, filed with the EMB, places the quarry area of
+San Ildefonso and Doña Remedios Trinidad "in the vicinity of the western foothills of Southern Sierra
+Madre Range".
 
 ## Who operates here
 

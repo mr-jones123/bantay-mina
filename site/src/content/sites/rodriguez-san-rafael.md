@@ -6,6 +6,7 @@ province: Rizal
 region: CALABARZON (Region IV-A)
 islandGroup: Luzon
 mountainRange: Sierra Madre
+mountainRangeSource: https://eia.emb.gov.ph/wp-content/uploads/2020/02/ATN_EIS.pdf
 operator: Montalban Millex Aggregates Corporation; Majestic Earth Core Ventures, Inc. for San Rafael Development Corporation; WawaJVCo Inc. for the separate Upper Wawa Dam project
 commodities: [basalt, andesite, aggregates]
 stage: operating
@@ -137,6 +138,9 @@ sources:
     publisher: Presidential Communications Office
     url: https://pco.gov.ph/news_releases/pbbm-commends-timely-completion-of-key-water-project-in-rizal-biggest-water-source-constructed-in-50-years/
     date: 2024-07-10
+  - title: ATN Integrated Aggregates Project — Environmental Impact Statement
+    publisher: ATN Holdings, Inc. (filed with the Environmental Management Bureau)
+    url: https://eia.emb.gov.ph/wp-content/uploads/2020/02/ATN_EIS.pdf
 lastReviewed: 2026-10-08
 ---
 
@@ -155,6 +159,13 @@ in the north-west corner is the edge of Rodriguez town's housing growth, not qua
 
 The images show where land changed. They do not show the commercial quarries' permit boundaries, which
 are not public, so the page does not say whether any pit crosses a protected-area line.
+
+## On the Sierra Madre
+
+No document reviewed for these San Rafael quarries places them in the range by name. The environmental
+impact statement for ATN's quarry 7 km to the north, filed with the EMB, says that project "is part of the
+Southern Sierra Madre". Its description of the same Montalban rock district names Montalban Millex among
+the aggregate quarries operating there.
 
 ## Who operates here
 

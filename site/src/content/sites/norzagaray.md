@@ -6,6 +6,7 @@ province: Bulacan
 region: Central Luzon (Region III)
 islandGroup: Luzon
 mountainRange: Sierra Madre
+mountainRangeSource: https://www.speleo.cz/data/files/CSS_knihovna/E-pudlici/Petice_Filipiny_2021/Geologist_Reports.pdf
 operator: Republic Cement & Building Materials, Inc.; Helix Mining and Development Corporation; Spar Development Corporation
 commodities: [limestone, shale]
 stage: operating
@@ -140,6 +141,10 @@ sources:
     publisher: Mines and Geosciences Bureau
     url: https://mgb.gov.ph/images/Mineral_Statistics/2025/NON-METALLIC-OPERATING-MINES-as-of-September-2025-1-1.pdf
     date: 2025-09
+  - title: Geological assessment report of the Pinagrealan Cave
+    publisher: Muhammad Akmal, geologist (report attached to a 2021 petition)
+    url: https://www.speleo.cz/data/files/CSS_knihovna/E-pudlici/Petice_Filipiny_2021/Geologist_Reports.pdf
+    date: 2021-06-15
 lastReviewed: 2026-10-08
 ---
 
@@ -159,6 +164,13 @@ The magenta layer counts about 218 ha that went from green to bare between 1988â
 274 ha between 2016â€“18 and 2026. The second figure includes many small farm plots and some new housing
 in the south-west of the box, not only quarry ground. The images do not show which permit each pit or
 clearing belongs to.
+
+## On the Sierra Madre
+
+A 2021 geological assessment of Pinagrealan Cave in Bigte, Norzagaray, just south of this box, written
+for a petition against a nearby quarry, describes the cave as "located at the foot of the Sierra Madre
+mountain range" and the area's Angat limestone as lying "on the western flank of the southern Sierra
+Madre". It is a private report, not a government finding.
 
 ## Who operates here
 

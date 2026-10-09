@@ -6,6 +6,7 @@ province: Isabela
 region: Cagayan Valley (Region II)
 islandGroup: Luzon
 mountainRange: Sierra Madre
+mountainRangeSource: https://lawphil.net/statutes/repacts/ra2001/ra_9125_2001.html
 operator: Dinapigue Mining Corporation (100%-owned by Nickel Asia Corporation)
 commodities: [nickel]
 stage: operating

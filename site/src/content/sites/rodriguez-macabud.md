@@ -6,6 +6,7 @@ province: Rizal
 region: CALABARZON (Region IV-A)
 islandGroup: Luzon
 mountainRange: Sierra Madre
+mountainRangeSource: https://eia.emb.gov.ph/wp-content/uploads/2020/02/ATN_EIS.pdf
 operator: ATN Holdings, Inc.
 commodities: [basalt, aggregates]
 stage: operating
@@ -94,6 +95,12 @@ shows as a separate patch of magenta west of the main chain.
 The magenta layer counts about 156 ha that went from green to bare between 1988–90 and 2026, and about
 137 ha between 2016–17 and 2026. Much of the quarry ground was grass rather than dense green before, so
 these figures undercount the area dug. The images do not show which permit each eastern pit belongs to.
+
+## On the Sierra Madre
+
+ATN's environmental impact statement, filed with the EMB, says of its Macabud quarry: "The project
+area is part of the Southern Sierra Madre." It describes the rock being quarried as part of the Montalban
+Ophiolitic Complex, citing MGB (2010).
 
 ## Who operates here
 

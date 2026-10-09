@@ -135,8 +135,10 @@ const sites = defineCollection({
       province: z.string(),
       region: z.string(),
       islandGroup: z.enum(['Luzon', 'Visayas', 'Mindanao']),
-      // Sites in a mountain range with its own overview page (src/pages/sierra-madre.astro).
+      // Sites in a mountain range with its own overview page (src/pages/sierra-madre.astro). Tagging a
+      // site needs a source that places it in the range, listed in `sources`.
       mountainRange: z.enum(['Sierra Madre']).optional(),
+      mountainRangeSource: z.url().optional(),
       operator: z.string(),
       commodities: z.array(z.string()).min(1),
       stage: z.enum(['exploration', 'development', 'operating', 'suspended', 'closed']),
@@ -162,6 +164,10 @@ const sites = defineCollection({
     .superRefine((site, ctx) => {
       const listed = new Set(site.sources.map((s) => s.url));
       const cited = [site.permit.source, ...site.timeline.flatMap((t) => t.sources)];
+      if (site.mountainRange) {
+        if (site.mountainRangeSource) cited.push(site.mountainRangeSource);
+        else ctx.addIssue({ code: 'custom', message: `mountainRange needs a mountainRangeSource` });
+      }
       for (const url of cited) {
         if (!listed.has(url)) {
           ctx.addIssue({ code: 'custom', message: `cited source not in sources list: ${url}` });
